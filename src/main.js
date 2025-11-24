@@ -293,6 +293,7 @@ function makeWaterMeshPlane(texture, waterChunk) {
 		ui.renderPlayers(playerCount);
 		ui.renderScore(myBoat?.score || 0, highScore);
 		ui.renderThrottle(myBoat?.throttle || 0);
+		ui.renderHealth(myBoat?.hp || 0);
 		ui.renderDeath(myBoat);
 
 		if (keysDown.a || keysDown.ArrowLeft || keysDown.ButtonLeft) {

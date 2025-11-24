@@ -412,7 +412,7 @@ export default class World {
 	}
 
 	applyDamage(entity, damageAmount = 0) {
-		entity.hp = (entity.hp || 0) - damageAmount;
+		entity.hp = Math.floor((entity.hp || 0) - damageAmount);
 	}
 
 	killEntity(entity) {
@@ -593,8 +593,10 @@ export default class World {
 		if (totalHitDamage) {
 			objA.hit = 1;
 			objB.hit = 1;
-			this.applyDamage(objA, totalHitDamage);
-			this.applyDamage(objB, totalHitDamage);
+			const randAmount = totalHitDamage / 10;
+			const damage = totalHitDamage + randInt(randAmount) - randInt(randAmount);
+			this.applyDamage(objA, damage);
+			this.applyDamage(objB, damage);
 			// if (objA.isBoat) objA.flooded = 1;
 			// if (objB.isBoat) objB.flooded = 1;
 			this.giveCollisionScore(objA, objB);

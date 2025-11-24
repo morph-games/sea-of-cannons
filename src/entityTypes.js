@@ -51,8 +51,8 @@ export default {
 	ironCannonball: {
 		...defaultEntityType,
 		density: 5,
-		maxHp: 50,
-		hitDamage: 50,
+		maxHp: 10,
+		hitDamage: 45,
 		decaysUnderWater: true,
 		waterFrictionScale: 0.5,
 		buoyancyMultipler: 0.0014,

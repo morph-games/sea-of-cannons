@@ -27,6 +27,7 @@ export default class UserInterface {
 		this.scoresElt = $id('scores');
 		// this.connElt = $id('conn-details');
 		this.currentConnection = $id('current-connection');
+		this.healthElt = $id('health');
 		this.throttleElt = $id('throttle');
 		this.deathDialog = $id('death');
 		this.p2pDialog = $id('p2p-dialog');
@@ -125,6 +126,11 @@ export default class UserInterface {
 		if (throttleVal > 0) text = '->';
 		if (throttleVal < 0) text = '<-';
 		this.throttleElt.innerText = text;
+	}
+
+	renderHealth(hp) {
+		if (!this.healthElt) return;
+		this.healthElt.innerText = `HP: ${hp}`;
 	}
 
 	renderDeath(playerBoat) {

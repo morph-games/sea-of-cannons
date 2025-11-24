@@ -109,6 +109,7 @@ export default class WorldHost {
 		if (o.direction) ro.direction = o.direction;
 		if (o.width) ro.width = o.width;
 		if (o.height) ro.height = o.height;
+		if (o.hp) ro.hp = o.hp;
 		if (o.hit) ro.hit = o.hit;
 		if (o.firing) ro.firing = o.firing;
 		if (o.isDead) ro.isDead = o.isDead;
