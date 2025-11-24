@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Waves</title>
+		<link rel="icon" type="image/x-icon" href="./assets/favicon-CtlxGAU1.ico">
+		<script type="module" crossorigin src="./assets/index-Cgh3QSDO.js"></script>
+		<link rel="stylesheet" crossorigin href="./assets/index-BQ_2YZk3.css">
+	</head>
+	<body>
+		<div id="ui">
+			<div id="top-ui">
+				<div class="top-ui-row">
+					<div id="conn-details">
+						<button type="button">P2P <span class="key-hint">p</span></button>
+						<span id="current-connection"></span>
+					</div>
+					<div id="players"></div>
+					<div id="scores"></div>
+				</div>
+				<div class="top-ui-row">
+					<div>
+						<!-- health -->
+						<div id="throttle"></div>
+					</div>
+					<div>
+						<!-- fuel -->
+					</div>
+				</div>
+			</div>
+			<dialog id="death">
+				<div class="notice">You Died!</div>
+				<button type="button" class="respawn">Respawn</button>
+			</dialog>
+			<dialog id="p2p-dialog" class="p2p-hosting">
+				<header>
+					<h1>P2P</h1>
+					<button type="button" class="close-p2p-dialog">Close</button>
+				</header>
+				<div>
+					<h2 class="host-title">Host</h2>
+					<h2 class="hosting-title">&check; Hosting</h2>
+					Your host name:
+					<input type="text" id="host-name" readonly="readonly" />
+					<div class="hosting-tip">Give this name to your friends to connect.</div>
+					<button type="button" class="host-action">Host</button>
+				</div>
+				<div class="or-divider"><div>OR</div></div>
+				<div>
+					<h2 class="connect-title">Connect</h2>
+					<h2 class="connected-title">&check; Connected</h2>
+					Your friend's host:
+					<input type="text" id="connect-name" placeholder="???_wave_morph" />
+					<button type="button" class="connect-action">Connect</button>
+				</div>
+				
+			</dialog>
+		</div>
+		<div id="controls">
+			<button type="button" class="go-left">&larr;
+				<span class="key-hint">a</span>
+			</button>
+			<button type="button" class="go-right">&rarr;
+				<span class="key-hint">d</span>
+			</button>
+			<!--
+			<button type="button" class="repair">🛠️
+				<span class="key-hint">r</span>
+			</button>
+			-->
+		</div>
+		<!-- <div style="border: solid 1px red; position: absolute; bottom: 0;">test</div> -->
+		<!--
+		<main>
+		</main>
+		-->
+	</body>
+</html>
