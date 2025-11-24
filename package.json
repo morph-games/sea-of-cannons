@@ -1,0 +1,25 @@
+{
+  "name": "wave-world",
+  "version": "0.1.0",
+  "description": "game",
+  "main": "index.js",
+  "scripts": {
+    "serve": "vite",
+    "preview": "vite preview",
+    "build": "vite build --base=./"
+  },
+  "keywords": [
+    "game"
+  ],
+  "author": "Morph",
+  "license": "MIT",
+  "devDependencies": {
+    "rocket-boots-eslint": "github:rocket-boots/rocket-boots-eslint",
+    "vite": "^7.1.12"
+  },
+  "dependencies": {
+    "matter-js": "^0.20.0",
+    "peerjs": "^1.5.5",
+    "pixi.js": "^8.14.0"
+  }
+}
