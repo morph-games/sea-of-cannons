@@ -1,8 +1,6 @@
 import { Point } from 'pixi.js';
 import { clamp, lerp } from './utils.js';
-
-const evCache = [];
-let prevDiff = -1;
+import { vec2 } from './Vector2.js';
 
 export default class Camera {
 	constructor(worldContainer, canvas) {
@@ -11,6 +9,8 @@ export default class Camera {
 		this.x = 0;
 		this.y = 0;
 		this.zoom = 1;
+		this.pinchEventCache = [];
+		this.pinchPrevDiff = null;
 	}
 
 	setZoom(z) {
@@ -42,27 +42,12 @@ export default class Camera {
 	}
 
 	setupPinchZoom() {
-		const zoomIn = () => { this.addZoom(0.01); };
-		const zoomOut = () => { this.addZoom(-0.01); };
-
 		document.addEventListener('pointerdown', (e) => {
 			// The pointerdown event signals the start of a touch interaction.
 			// This event is cached to support 2-finger gestures
-			evCache.push(e);
+			this.pinchEventCache.push(e);
 		});
-		// Install event handlers for the pointer target
-		const el = document.body; // getElementById("target");
-
-		el.onpointermove = pointermoveHandler;
-
-		// Use same handler for pointer{up,cancel,out,leave} events since
-		// the semantics for these events - in this app - are the same.
-		el.onpointerup = pointerupHandler;
-		el.onpointercancel = pointerupHandler;
-		el.onpointerout = pointerupHandler;
-		el.onpointerleave = pointerupHandler;
-
-		function pointermoveHandler(ev) {
+		document.addEventListener('pointermove', (ev) => {
 			// This function implements a 2-pointer horizontal pinch/zoom gesture.
 			//
 			// If the distance between the two pointers has increased (zoom in),
@@ -74,52 +59,55 @@ export default class Camera {
 			// log("pointerMove", ev);
 
 			// Find this event in the cache and update its record with this event
-			const index = evCache.findIndex(
+			const index = this.pinchEventCache.findIndex(
 				(cachedEv) => cachedEv.pointerId === ev.pointerId,
 			);
-			evCache[index] = ev;
+			this.pinchEventCache[index] = ev;
 
 			// If two pointers are down, check for pinch gestures
-			if (evCache.length === 2) {
+			if (this.pinchEventCache.length === 2) {
 				// Calculate the distance between the two pointers
-				const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
+				const [evOne, evTwo] = this.pinchEventCache;
+				const evOneVec = vec2(evOne.clientX, evOne.clientY);
+				const evTwoVec = vec2(evTwo.clientX, evTwo.clientY);
+				const curDiff = evOneVec.distance(evTwoVec);
 
-				if (prevDiff > 0) {
-					if (curDiff > prevDiff) {
-						// The distance between the two pointers has increased
-						// log("Pinch moving OUT -> Zoom in", ev);
-						zoomIn();
-					}
-					if (curDiff < prevDiff) {
-						// The distance between the two pointers has decreased
-						// log('Pinch moving IN -> Zoom out', ev);
-						zoomOut();
-					}
+				if (this.pinchPrevDiff === null) {
+					this.pinchPrevDiff = curDiff;
+					return;
 				}
-
+				if (curDiff > this.pinchPrevDiff) {
+					// The distance between the two pointers has increased
+					// log("Pinch moving OUT -> Zoom in", ev);
+					this.addZoom(-0.1);
+				} else if (curDiff < this.pinchPrevDiff) {
+					// The distance between the two pointers has decreased
+					// log('Pinch moving IN -> Zoom out', ev);
+					this.addZoom(0.1);
+				}
 				// Cache the distance for the next move event
-				prevDiff = curDiff;
+				this.pinchPrevDiff = curDiff;
 			}
-		}
+		});
 
-		function pointerupHandler(ev) {
-			// Remove this pointer from the cache and reset the target's
-			// background and border
-			removeEvent(ev);
-
-			// If the number of pointers down is less than two then reset diff tracker
-			if (evCache.length < 2) {
-				prevDiff = -1;
-			}
-		}
-
-		function removeEvent(ev) {
+		const handlePointerDone = (ev) => {
 			// Remove this event from the target's cache
-			const index = evCache.findIndex(
+			const index = this.pinchEventCache.findIndex(
 				(cachedEv) => cachedEv.pointerId === ev.pointerId,
 			);
-			evCache.splice(index, 1);
-		}
+			this.pinchEventCache.splice(index, 1);
+
+			// If the number of pointers down is less than two then reset diff tracker
+			if (this.pinchEventCache.length < 2) {
+				this.pinchPrevDiff = null;
+			}
+		};
+		// Use same handler for pointer{up,cancel,out,leave} events since
+		// the semantics for these events - in this app - are the same.
+		document.addEventListener('pointerup', handlePointerDone);
+		document.addEventListener('pointercancel', handlePointerDone);
+		document.addEventListener('pointerout', handlePointerDone);
+		document.addEventListener('pointerleave', handlePointerDone);
 	}
 
 	getWorldCoordinates(screenX = 0, screenY = 0) {
