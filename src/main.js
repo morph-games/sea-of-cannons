@@ -290,7 +290,7 @@ function makeWaterMeshPlane(texture, waterChunk) {
 
 		camera.focus(...player.getFocusCoords());
 
-		ui.renderPlayers(playerCount);
+		ui.renderPlayers(playerCount, camera.zoom);
 		ui.renderScore(myBoat?.score || 0, highScore);
 		ui.renderThrottle(myBoat?.throttle || 0);
 		ui.renderDeath(myBoat);

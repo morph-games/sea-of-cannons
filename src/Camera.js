@@ -24,7 +24,7 @@ export default class Camera {
 	focus(x = this.x, y = this.y, zoom = this.zoom) {
 		this.x = (typeof x === 'object') ? x.x : x;
 		this.y = (typeof x === 'object') ? x.y : y;
-		this.zoom = zoom;
+		this.setZoom(zoom);
 		const screenX = (this.canvas.width / 2) - (this.x * this.zoom);
 		const screenY = (this.canvas.height / 2) - this.y;
 		this.worldContainer.x = lerp(this.worldContainer.x, screenX, 0.1);
@@ -42,8 +42,8 @@ export default class Camera {
 	}
 
 	setupPinchZoom() {
-		const zoomIn = () => { this.addZoom(0.1); };
-		const zoomOut = () => { this.addZoom(-0.1); };
+		const zoomIn = () => { this.addZoom(0.01); };
+		const zoomOut = () => { this.addZoom(-0.01); };
 
 		document.addEventListener('pointerdown', (e) => {
 			// The pointerdown event signals the start of a touch interaction.
