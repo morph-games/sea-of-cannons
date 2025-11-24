@@ -13,6 +13,14 @@ export default class Camera {
 		this.zoom = 1;
 	}
 
+	setZoom(z) {
+		this.zoom = clamp(z, 0.1, 7);
+	}
+
+	addZoom(z) {
+		this.setZoom(this.zoom + z);
+	}
+
 	focus(x = this.x, y = this.y, zoom = this.zoom) {
 		this.x = (typeof x === 'object') ? x.x : x;
 		this.y = (typeof x === 'object') ? x.y : y;
@@ -29,13 +37,13 @@ export default class Camera {
 
 	setupWheelZoom() {
 		document.addEventListener('wheel', (e) => {
-			this.zoom = clamp(this.zoom - (e.deltaY / 1000), 0.05, 150);
+			this.addZoom((e.deltaY / -1000));
 		});
 	}
 
 	setupPinchZoom() {
-		const zoomIn = () => { this.zoom += 1; };
-		const zoomOut = () => { this.zoom -= 1; };
+		const zoomIn = () => { this.addZoom(1); };
+		const zoomOut = () => { this.addZoom(-1); };
 
 		// Install event handlers for the pointer target
 		const el = document.body; // getElementById("target");

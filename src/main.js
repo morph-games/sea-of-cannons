@@ -239,7 +239,7 @@ function makeWaterMeshPlane(texture, waterChunk) {
 			if (!b.isNpc && !b.deleted) playerCount += 1;
 			// Handle sounds
 			if (b.removed) return;
-			if (b.isDead && !previousBoats[boatIndex].isDead) {
+			if (b.isDead && previousBoats[boatIndex] && !previousBoats[boatIndex].isDead) {
 				soundController.playSounds(['hit', 'splash', 'destroy'], b, myBoat);
 			}
 			if (!b.isDead) {
