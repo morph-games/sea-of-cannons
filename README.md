@@ -1,6 +1,6 @@
 # Sea of Cannons
 
-Play it here: https://morph-games.github.io/sea-of-cannons/
+Play it here: https://morph-games.github.io/sea-of-cannons/dist/
 
 ## Goals
 

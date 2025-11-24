@@ -21,15 +21,15 @@ export default class Renderer {
 	}
 
 	async init() {
-		this.waterTexture = await Assets.load('public/images/water01.png');
-		this.cloudTexture1 = await Assets.load('public/images/cloud01.png');
-		this.cloudTexture2 = await Assets.load('public/images/cloud02.png');
+		this.waterTexture = await Assets.load('images/water01.png');
+		this.cloudTexture1 = await Assets.load('images/cloud01.png');
+		this.cloudTexture2 = await Assets.load('images/cloud02.png');
 		this.cloudTextures = [this.cloudTexture1, this.cloudTexture2];
-		this.crateTexture = await Assets.load('public/images/crate01.png');
-		this.ballTexture = await Assets.load('public/images/cannonball01.png');
-		this.boatRightTexture = await Assets.load('public/images/boat01-right.png');
-		this.boatLeftTexture = await Assets.load('public/images/boat01-left.png');
-		this.puffTexture = await Assets.load('public/images/puff-8x8.png');
+		this.crateTexture = await Assets.load('images/crate01.png');
+		this.ballTexture = await Assets.load('images/cannonball01.png');
+		this.boatRightTexture = await Assets.load('images/boat01-right.png');
+		this.boatLeftTexture = await Assets.load('images/boat01-left.png');
+		this.puffTexture = await Assets.load('images/puff-8x8.png');
 		[
 			// waterTexture,
 			...this.cloudTextures, this.crateTexture,
