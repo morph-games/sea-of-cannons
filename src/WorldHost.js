@@ -110,6 +110,7 @@ export default class WorldHost {
 		if (o.width) ro.width = o.width;
 		if (o.height) ro.height = o.height;
 		if (o.hit) ro.hit = o.hit;
+		if (o.firing) ro.firing = o.firing;
 		if (o.isDead) ro.isDead = o.isDead;
 		if (o.submergedPercent) ro.submergedPercent = o.submergedPercent;
 		['deep', 'score', 'throttle'].forEach((prop) => {
@@ -181,8 +182,8 @@ export default class WorldHost {
 			const direction = params;
 			this.world.moveBoat(boatIndex, direction);
 		} else if (command === 'FC') { // Fire Cannon
-			const pos = params;
-			this.world.makeCannonball(boatIndex, pos);
+			const aimPosition = params;
+			this.world.fireCannonballFromBoat(boatIndex, aimPosition);
 		} else if (command === 'RS') { // Respawn
 			this.world.makeBoat(playerId, boatIndex);
 		}

@@ -5,6 +5,7 @@ import Player from './Player.js';
 import Camera from './Camera.js';
 import { radiansToDegrees } from './utils.js';
 import UserInterface from './UserInterface.js';
+import SoundController from './SoundController.js';
 
 const player = new Player();
 const ui = new UserInterface(player);
@@ -131,6 +132,7 @@ function makeWaterMeshPlane(texture, waterChunk) {
 	const { worldContainer, bgContainer } = makeRenderWorld(app);
 	const camera = new Camera(worldContainer, app.canvas);
 	camera.setupWheelZoom();
+	camera.setupPinchZoom();
 	if (window.innerWidth < 800) camera.zoom = 0.75;
 
 	const renderer = new Renderer(worldContainer, bgContainer);
@@ -204,7 +206,11 @@ function makeWaterMeshPlane(texture, waterChunk) {
 		await player.sendCommand('FC', pos);
 	});
 
+	const soundController = new SoundController();
+
 	let totalTime = 0;
+	let myBoat = null;
+	let previousBoats = [];
 
 	app.ticker.add((time) => { // Listen for animate update
 		totalTime += time.deltaTime;
@@ -225,16 +231,24 @@ function makeWaterMeshPlane(texture, waterChunk) {
 
 		let playerCount = 0;
 		let highScore = 0;
-		let myBoat = null;
-		const boatCallback = (b) => {
+		const boatCallback = (b, boatIndex) => {
 			if (b.score > highScore) highScore = b.score;
 			if (b.playerId === player.id) {
 				myBoat = b;
 			}
 			if (!b.isNpc && !b.deleted) playerCount += 1;
-			// console.log(b.isNpc, b.deleted, playerCount);
+			// Handle sounds
+			if (b.removed) return;
+			if (b.isDead && !previousBoats[boatIndex].isDead) {
+				soundController.playSounds(['hit', 'splash', 'destroy'], b, myBoat);
+			}
+			if (!b.isDead) {
+				if (b.hit) soundController.playSound('hit', b, myBoat, b.hit);
+				if (b.firing) soundController.playSound('fire', b, myBoat, b.firing);
+			}
 		};
 		renderer.renderBoats(boats, boatCallback);
+		previousBoats = boats;
 
 		crates.forEach((c, i) => {
 			let vc = visualCrates[i];

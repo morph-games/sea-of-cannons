@@ -191,11 +191,11 @@ export default class Player {
 	}
 
 	getFocusCoords() {
-		const { x = 0, y = 0 } = this.boats?.[this.myBoatIndex] || {};
+		const { x = 0, y = 0, direction = 0 } = this.boats?.[this.myBoatIndex] || {};
 		return [
-			x,
+			x + (direction * 85),
 			(y / 10) // reduce y to be closer to zero
-			- 50, // And keep focus above the boat (the air has more action w/ cannonballs)
+			- 60, // And keep focus above the boat (the air has more action w/ cannonballs)
 		];
 	}
 }

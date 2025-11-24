@@ -145,7 +145,7 @@ export default class Renderer {
 					},
 				);
 			}
-			boatCallback(b);
+			boatCallback(b, i);
 		});
 	}
 

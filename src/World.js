@@ -224,7 +224,6 @@ export default class World {
 		});
 		Body.setAngle(body, 0.3);
 		this.addToWorld(body);
-		const fireHeatUp = 1000 / entType.rateOfFire;
 		const boat = {
 			isBoat: true,
 			playerId,
@@ -237,12 +236,13 @@ export default class World {
 			deep: 0, // 0 - 1
 			submergedPercent: 0, // 0 - 1
 			hit: 0, // 0 - 1
+			firing: 0, // 0 - 1
 			hp: maxHp,
 			score: 0,
 			flooded: 0, // 0 - 1
 			globalBuoyancyVoxelPoints: [], // Global/world coordinates
-			fireHeatUp,
-			fireCooldown: randInt(fireHeatUp),
+			rateOfFire: entType.rateOfFire,
+			fireCooldown: randInt(1000 / entType.rateOfFire),
 		};
 		if (respawnBoatIndex >= 0) { // We're replacing an existing (probably dead) boat
 			this.boats[respawnBoatIndex] = boat;
@@ -254,6 +254,7 @@ export default class World {
 
 	makeEnemyBoat(respawnBoatIndex = -1) {
 		const boat = this.makeBoat(NPC_PLAYER_ID_PREFIX + makeRandomId(), respawnBoatIndex);
+		boat.rateOfFire /= 3;
 		boat.isNpc = true;
 		boat.autoRespawn = true;
 		boat.target = null;
@@ -432,6 +433,7 @@ export default class World {
 		if (entity.decaying) entity.decaying -= deltaTime;
 		if (entity.decaying <= 0) this.removeEntity(entity);
 		if (entity.hit) entity.hit = clamp(entity.hit - 0.1, 0, 1);
+		if (entity.firing) entity.firing = clamp(entity.firing - 0.1, 0, 1);
 	}
 
 	findTarget(boat, cutOffDistance = Infinity) {
@@ -486,19 +488,26 @@ export default class World {
 		boat.planningCooldown = 100;
 	}
 
-	fireBoat(boat, boatIndex) {
+	fireCannonballFromBoat(boatIndex, aimPos) {
+		const boat = this.boats[boatIndex];
 		if (boat.removed || boat.isDead) return;
 		if (typeof boat.fireCooldown !== 'number' || boat.fireCooldown > 0) return;
-		const { target } = this.findTarget(boat, boat.aggroRange);
-		if (target) {
-			// NOTE: Angle seems to be backwards from what I would expect - TODO LATER: Fix?
-			const targetDirection = (target.body.position.x < boat.body.position.x) ? 1 : -1;
-			const fireAngle = -Math.PI + (boat.preferredFireAngle * targetDirection);
-			const fireVector = vec2(0, 1).setAngle(fireAngle, 100);
-			const aimPosition = vec2(boat.body.position).add(fireVector);
-			this.makeCannonball(boatIndex, aimPosition);
+		const fireHeatUp = 1000 / (boat.rateOfFire || 1);
+		boat.fireCooldown = (fireHeatUp || 0) + randInt(fireHeatUp / 10);
+		boat.firing = 1;
+		if (aimPos) { // Typically for players
+			this.makeCannonball(boatIndex, aimPos);
+			return;
 		}
-		boat.fireCooldown = (boat.fireHeatUp || 0) + randInt(boat.fireHeatUp / 10);
+		// Typically for NPCs...
+		const { target } = this.findTarget(boat, boat.aggroRange);
+		if (!target) return;
+		// NOTE: Angle seems to be backwards from what I would expect - TODO LATER: Fix?
+		const targetDirection = (target.body.position.x < boat.body.position.x) ? 1 : -1;
+		const fireAngle = -Math.PI + (boat.preferredFireAngle * targetDirection);
+		const fireVector = vec2(0, 1).setAngle(fireAngle, 100);
+		const aimPosition = vec2(boat.body.position).add(fireVector);
+		this.makeCannonball(boatIndex, aimPosition);
 	}
 
 	respawnBoat(deadBoats) {
@@ -527,7 +536,7 @@ export default class World {
 			if (typeof b.planningCooldown === 'number') b.planningCooldown -= deltaTimeParam;
 			if (b.isNpc) {
 				this.planBoat(b, boatIndex);
-				this.fireBoat(b, boatIndex);
+				this.fireCannonballFromBoat(boatIndex);
 			}
 			if (b.removed || b.isDead) {
 				b.boatIndex = boatIndex;
