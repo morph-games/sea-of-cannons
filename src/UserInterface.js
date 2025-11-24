@@ -84,8 +84,8 @@ export default class UserInterface {
 		return false;
 	}
 
-	renderPlayers(playerCount, zoom) {
-		this.playersElt.innerText = `${playerCount} player${playerCount > 1 ? 's' : ''} zoom: ${zoom}`;
+	renderPlayers(playerCount) {
+		this.playersElt.innerText = `${playerCount} player${playerCount > 1 ? 's' : ''}`;
 	}
 
 	renderScore(myScore, highScore) {
