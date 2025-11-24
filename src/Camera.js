@@ -14,7 +14,7 @@ export default class Camera {
 	}
 
 	setZoom(z) {
-		this.zoom = clamp(z, 0.1, 7);
+		this.zoom = clamp(z, 0.1, 3); // max of 7?
 	}
 
 	addZoom(z) {
@@ -42,12 +42,17 @@ export default class Camera {
 	}
 
 	setupPinchZoom() {
-		const zoomIn = () => { this.addZoom(1); };
-		const zoomOut = () => { this.addZoom(-1); };
+		const zoomIn = () => { this.addZoom(0.1); };
+		const zoomOut = () => { this.addZoom(-0.1); };
 
+		document.addEventListener('pointerdown', (e) => {
+			// The pointerdown event signals the start of a touch interaction.
+			// This event is cached to support 2-finger gestures
+			evCache.push(e);
+		});
 		// Install event handlers for the pointer target
 		const el = document.body; // getElementById("target");
-		el.onpointerdown = pointerdownHandler;
+
 		el.onpointermove = pointermoveHandler;
 
 		// Use same handler for pointer{up,cancel,out,leave} events since
@@ -56,13 +61,6 @@ export default class Camera {
 		el.onpointercancel = pointerupHandler;
 		el.onpointerout = pointerupHandler;
 		el.onpointerleave = pointerupHandler;
-
-		function pointerdownHandler(ev) {
-			// The pointerdown event signals the start of a touch interaction.
-			// This event is cached to support 2-finger gestures
-			evCache.push(ev);
-			// log("pointerDown", ev);
-		}
 
 		function pointermoveHandler(ev) {
 			// This function implements a 2-pointer horizontal pinch/zoom gesture.
