@@ -8,6 +8,7 @@ body {
 	overflow: hidden;
 	font-size: calc(12px + 0.75vmin);
 	font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+	touch-action: none;
 }
 
 dialog {
