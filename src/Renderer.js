@@ -2,6 +2,7 @@ import { Application, Assets, Container, Graphics, Sprite, MeshPlane } from 'pix
 import ParticleController from './ParticleController.js';
 import { radiansToDegrees, pickRand } from './utils.js';
 import entityTypes from './entityTypes.js';
+import gameConfig from './gameConfig.js';
 
 const NOOP = () => {};
 
@@ -55,7 +56,6 @@ export default class Renderer {
 		this.worldContainer.addChild(this.click);
 
 		this.particleController = null; // created in init
-		this.wireframesOn = false;
 		this.surfaceCirclesOn = false;
 		this.wireframes = new Container();
 		this.worldContainer.addChild(this.wireframes);
@@ -223,7 +223,8 @@ export default class Renderer {
 
 	renderBoats(boats = [], boatCallback = NOOP) {
 		let bcIndex = 0;
-		if (this.wireframesOn) this.wireframes.removeChildren(); // Bad performance - TODO: improve?
+		if (gameConfig.wireframesOn) this.wireframes.removeChildren();
+		// ^^ Bad performance - TODO: improve?
 		boats.forEach((b, i) => {
 			let vb = this.visualBoats[i];
 			if (!vb) {
@@ -244,7 +245,7 @@ export default class Renderer {
 			vb.visible = !b.removed;
 			vb.alpha = 1 - b.deep;
 
-			if (this.wireframesOn && !b.removed) {
+			if (gameConfig.wireframesOn && !b.removed) {
 				// Draw wireframe for vertices
 				const boatWireframe = new Graphics();
 				boatWireframe.moveTo(b.vertices[0].x, b.vertices[0].y);

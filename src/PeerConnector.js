@@ -11,7 +11,6 @@ export default class PeerConnector {
 		// Monitoring properties
 		this.monitoringOn = false;
 		this.monitorIntervalMs = 1000; // Check every 1 second
-
 		this.monitorStats = {
 			// 'connectionId': {
 			//	intervalId: null,
@@ -157,15 +156,15 @@ export default class PeerConnector {
 						const bytesReceivedDelta = bytesReceived - prevReport.bytesReceived;
 
 						// Calculate the rate (Bytes per second)
-						const bytesPerSecond = bytesSentDelta / timeElapsedSec;
+						const sentBytesPerSecond = bytesSentDelta / timeElapsedSec;
 						const recBytesPerSecond = bytesReceivedDelta / timeElapsedSec;
 
 						// console.log(`Bandwidth (Outbound): ${bytesPerSecond.toFixed(2)} bytes/sec`);
 						// You can also calculate megabits per second (Mbps) for easier reading
-						const outMbps = (bytesPerSecond * 8) / (1024 * 1024);
+						const outMbps = (sentBytesPerSecond * 8) / (1024 * 1024);
 						const inMbps = (recBytesPerSecond * 8) / (1024 * 1024);
 						console.log(
-							'Bandwidth - Outbound:',
+							`Bandwidth (${connectionId}) Outbound:`,
 							outMbps.toFixed(2),
 							'Mbps, Inbound:',
 							inMbps.toFixed(2),

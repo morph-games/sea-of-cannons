@@ -22,6 +22,7 @@ const WATER_VERTICAL_VERTS = 6;
 const LEFT = 0;
 const ROOF = -9000;
 const RIGHT = 28000; // Can this go to 28k?
+const SIZE_X = RIGHT - LEFT;
 // If this is too high the spring functionality can get "bugged out", probably due to losing data
 // during the peer js communication
 const FLOOR = 500;
@@ -52,7 +53,7 @@ export default class World {
 		this.runner = Runner.create();
 
 		this.boatTypes = ['tug'];
-		this.idealBoatNumber = 30;
+		this.idealBoatNumber = 18; // Would like 30, but impacting bandwidth
 
 		this.cutOffMomentum = 2820; // cannonball velocity length 3 * cannonball mass
 
@@ -99,6 +100,13 @@ export default class World {
 		for (let i = 0; i < this.idealBoatNumber; i += 1) {
 			this.makeEnemyBoat();
 		}
+		const edgeOptions = { label: 'Edge', isStatic: true };
+		const leftEdge = Bodies.rectangle(0, 0, 10, 1000, edgeOptions);
+		const rightEdge = Bodies.rectangle(RIGHT, 0, 10, 1000, edgeOptions);
+		const bottomEdge = Bodies.rectangle(RIGHT / 2, FLOOR, SIZE_X, 10, edgeOptions);
+		this.addToWorld(leftEdge);
+		this.addToWorld(rightEdge);
+		this.addToWorld(bottomEdge);
 	}
 
 	startPhysics() {
@@ -556,6 +564,8 @@ export default class World {
 			}
 		});
 		const aliveBoats = this.boats.length - deadBoats.length;
+		// TODO: Reduce the spawn boat number based on the number of player boats in the game
+		// in order to reduce bandwidth
 		if (aliveBoats < this.idealBoatNumber) {
 			const firstRemovedNpcBoat = deadBoats.find((b) => b.isNpc && b.removed);
 			if (firstRemovedNpcBoat) {
@@ -598,6 +608,7 @@ export default class World {
 	}
 
 	getHitDamage(entity) {
+		if (!entity) return 0;
 		const { hitDamage = 0 } = entity;
 		const velLength = vec2(entity.body.velocity).length();
 		const momentum = velLength * entity.body.mass;
@@ -610,6 +621,7 @@ export default class World {
 		const { bodyA, bodyB } = pair;
 		const objA = this.findObjectFromBody(bodyA);
 		const objB = this.findObjectFromBody(bodyB);
+		if (!objA || !objB) return;
 		const totalHitDamage = this.getHitDamage(objA) + this.getHitDamage(objB);
 		if (totalHitDamage) {
 			objA.hit = 1;

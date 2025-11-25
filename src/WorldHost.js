@@ -1,5 +1,6 @@
 import PeerConnector from './PeerConnector.js';
 import World from './World.js';
+import gameConfig from './gameConfig.js';
 
 // const DEFAULT_PEER_ID = '1_wave_morph';
 
@@ -35,9 +36,8 @@ export default class WorldHost {
 		if (!playerId) return false;
 		const playerBoatIndex = this.findPlayerBoatIndex(playerId);
 		if (playerBoatIndex === -1) {
-			// const pBoat =
-			this.world.makeBoat(playerId);
-			// pBoat.hp += 1000;
+			const pBoat = this.world.makeBoat(playerId);
+			pBoat.hp += 0; // Tweak this for testing
 		}
 		const boatIndex = this.findPlayerBoatIndex(playerId);
 		const { connectionId } = connection;
@@ -105,7 +105,9 @@ export default class WorldHost {
 			ro.x = o.body.position.x;
 			ro.y = o.body.position.y;
 			ro.angle = o.body.angle;
-			ro.vertices = o.body.vertices.map(({ x, y }) => ({ x, y }));
+			if (gameConfig.wireframesOn) {
+				ro.vertices = o.body.vertices.map(({ x, y }) => ({ x, y }));
+			}
 		}
 		if (o.playerId) ro.playerId = o.playerId;
 		if (o.entityTypeKey) ro.entityTypeKey = o.entityTypeKey;
@@ -125,7 +127,8 @@ export default class WorldHost {
 		if (o.deleted) ro.deleted = true;
 		if (o.isNpc) ro.isNpc = true;
 		else { // Transfer certain data only for players, not for NPCs
-			if (o.globalBuoyancyVoxelPoints) { // eslint-disable-line no-lonely-if
+			// eslint-disable-next-line no-lonely-if
+			if (o.globalBuoyancyVoxelPoints && gameConfig.wireframesOn) {
 				ro.globalBuoyancyVoxelPoints = o.globalBuoyancyVoxelPoints;
 			}
 		}
@@ -150,11 +153,14 @@ export default class WorldHost {
 		const waterChunk = {
 			vertCount: this.world.waterChunk.vertCount,
 			size: this.world.waterChunk.size,
-			rippleDeltas: this.world.waterChunk.rippleDeltas, // This data is currently big
+			// If we stop sending rippleDeltas we save some bandwidth ~2+Mbps
+			// TODO: Add ripple deltas back in if it can be done in a performant way
+			// rippleDeltas: this.world.waterChunk.rippleDeltas, // This data is currently big
 			waveParams: this.world.waterChunk.waveParams,
 			// surfaceVerts: this.world.waterChunk.surfaceVerts, // TODO: Remove me
 		};
 		const sync = { totalTime, crateInfo, cannonballs, waterChunk, boats };
+		// console.log(sync);
 		this.connector.send({ sync });
 		this.syncTimer = setTimeout(() => this.sync(), this.syncTime);
 	}
