@@ -9,6 +9,9 @@ export default class SoundController {
 		/* eslint-disable no-sparse-arrays, no-floating-decimal, comma-spacing */
 		this.sounds = {
 			// hit: [2.2,,228,,.01,.13,4,3.8,,,,,.05,.5,,.3,.13,.89,.08,.4],
+			dud: [
+				[1.3,,446,,.04,.19,3,2.2,,,,,.05,.6,,.2,,.45,.07,.12,-2405],
+			],
 			hit: [
 				[2,,55,.06,.24,.54,4,,6,-8,,,,.7,,.5,,.45,.18],
 			],
@@ -34,7 +37,7 @@ export default class SoundController {
 		const dist = vec2(soundPos).distance(vec2(hearingPos));
 		if (dist > this.maxDistance) return;
 		const volumePercent = 1 - (dist / this.maxDistance);
-		console.log('Sound:', soundName, dist, volumePercent);
+		// console.log('Sound:', soundName, dist, volumePercent);
 		const soundChoices = this.sounds[soundName];
 		const soundArr = pickRand(soundChoices);
 		soundArr[0] = volumePercent * this.baseVolume; // volume

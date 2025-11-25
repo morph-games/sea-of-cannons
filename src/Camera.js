@@ -14,7 +14,7 @@ export default class Camera {
 	}
 
 	setZoom(z) {
-		this.zoom = clamp(z, 0.1, 3); // max of 7?
+		this.zoom = clamp(z, 0.3, 3); // max of 7?
 	}
 
 	addZoom(z) {

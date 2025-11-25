@@ -30,6 +30,7 @@ const SPAWN_PADDING = 400; // How far from the edges things should spawn
 const NPC_PLAYER_ID_PREFIX = 'NPC';
 const BOAT_LABEL = 'Boat';
 const CANNONBALL_LABEL = 'Cannonball';
+const CRATE_LABEL = 'Crate';
 
 export default class World {
 	constructor(boundaries = [LEFT, ROOF, RIGHT, FLOOR]) {
@@ -52,6 +53,8 @@ export default class World {
 
 		this.boatTypes = ['tug'];
 		this.idealBoatNumber = 30;
+
+		this.cutOffMomentum = 2820; // cannonball velocity length 3 * cannonball mass
 
 		/*
 		const render = Render.create({
@@ -143,7 +146,7 @@ export default class World {
 		const entType = entityTypes[entityTypeKey];
 		const body = Bodies.rectangle(pos.x, pos.y, 32, 32, {
 			// render: { fillStyle: '#000000' },
-			label: 'Crate',
+			label: CRATE_LABEL,
 			density: entType.density,
 		});
 		this.addToWorld(body);
@@ -208,7 +211,7 @@ export default class World {
 		const entityTypeKey = pickRand(this.boatTypes);
 		const entType = entityTypes[entityTypeKey];
 		const {
-			physicalWidth, physicalHeight,
+			// physicalWidth, physicalHeight,
 			density, maxHp,
 			vertexSet,
 		} = entType;
@@ -263,6 +266,7 @@ export default class World {
 		boat.planningCooldown = 100;
 		boat.preferredDistance = 250;
 		boat.preferredFireAngle = Math.PI / 4; // 45 degrees
+		boat.randomFireAngle = Math.PI / 10; // < 20 degress
 	}
 
 	deleteBoat(playerId) {
@@ -296,7 +300,7 @@ export default class World {
 		return worldPosition;
 	}
 
-	getBuoyancyVoxelPoints(entity) {
+	getBuoyancyVoxelPoints(entity) { // eslint-disable-line class-methods-use-this
 		if (entity.entityTypeKey) {
 			const points = entityTypes[entity.entityTypeKey].buoyancyVoxelPoints.map((point) => {
 				return World.getWorldCoordinatesFromRelative(entity.body, point);
@@ -306,7 +310,7 @@ export default class World {
 		return [{ x: entity.body.position.x, y: entity.body.position.y }];
 	}
 
-	getEntityVolume(entity) {
+	getEntityVolume(entity) { // eslint-disable-line class-methods-use-this
 		if (!entity.volume) {
 			if (entity.entityTypeKey) {
 				const entType = entityTypes[entity.entityTypeKey];
@@ -319,7 +323,7 @@ export default class World {
 		return entity.volume;
 	}
 
-	applyEngines(entity, deltaTime = 1) {
+	applyEngines(entity, deltaTime = 1) { // eslint-disable-line class-methods-use-this
 		if (!entity.throttle) return;
 		if (!entity.submerged) return;
 		const { body } = entity;
@@ -411,11 +415,11 @@ export default class World {
 		}
 	}
 
-	applyDamage(entity, damageAmount = 0) {
+	applyDamage(entity, damageAmount = 0) { // eslint-disable-line class-methods-use-this
 		entity.hp = Math.floor((entity.hp || 0) - damageAmount);
 	}
 
-	killEntity(entity) {
+	killEntity(entity) { // eslint-disable-line class-methods-use-this
 		entity.isDead = true;
 		entity.flooded = 1;
 		entity.score = 0;
@@ -471,7 +475,7 @@ export default class World {
 	planBoat(boat, boatIndex) {
 		if (boat.removed || boat.isDead) return;
 		if (typeof boat.planningCooldown !== 'number' || boat.planningCooldown > 0) return;
-		const { target, distance } = this.findTarget(boat, boat.sightRange);
+		const { target /* , distance */ } = this.findTarget(boat, boat.sightRange);
 		if (target) {
 			// TODO: set a preferred distance and angle
 			// TODO: find the distance to the target
@@ -504,7 +508,14 @@ export default class World {
 		if (!target) return;
 		// NOTE: Angle seems to be backwards from what I would expect - TODO LATER: Fix?
 		const targetDirection = (target.body.position.x < boat.body.position.x) ? 1 : -1;
-		const fireAngle = -Math.PI + (boat.preferredFireAngle * targetDirection);
+		const { preferredFireAngle = 0, randomFireAngle = 0 } = boat;
+		const fireAngle = -Math.PI // offset
+			+ ((
+				preferredFireAngle // Base angle, like 45 degrees
+				- (randomFireAngle / 2) + (Math.random() * randomFireAngle) // Add some randomness
+			)
+			* targetDirection // point angle towards target
+			);
 		const fireVector = vec2(0, 1).setAngle(fireAngle, 100);
 		const aimPosition = vec2(boat.body.position).add(fireVector);
 		this.makeCannonball(boatIndex, aimPosition);
@@ -529,6 +540,7 @@ export default class World {
 			this.applyFlotation(ent, deltaTime);
 			this.applyEngines(ent, deltaTime);
 			this.decay(ent, deltaTime);
+			// if (ent.isCannonball) console.log(vec2(ent.body.velocity).length(), ent.body.mass);
 		});
 		const deadBoats = [];
 		this.boats.forEach((b, boatIndex) => {
@@ -561,6 +573,7 @@ export default class World {
 		let arr = [];
 		if (body.label === BOAT_LABEL) arr = this.boats;
 		if (body.label === CANNONBALL_LABEL) arr = this.cannonballs;
+		if (body.label === CRATE_LABEL) arr = this.crates;
 		return arr.find((b) => (b.body.id === body.id));
 	}
 
@@ -584,12 +597,20 @@ export default class World {
 		}
 	}
 
+	getHitDamage(entity) {
+		const { hitDamage = 0 } = entity;
+		const velLength = vec2(entity.body.velocity).length();
+		const momentum = velLength * entity.body.mass;
+		if (momentum < this.cutOffMomentum) return hitDamage / 10;
+		// TODO: blend the damage between the cutoff length?
+		return hitDamage;
+	}
+
 	handleCollisionPair(pair) {
 		const { bodyA, bodyB } = pair;
 		const objA = this.findObjectFromBody(bodyA);
 		const objB = this.findObjectFromBody(bodyB);
-		const totalHitDamage = (objA.hitDamage || 0) + (objB.hitDamage || 0);
-		// console.log(bodyA.label, bodyB.label, totalHitDamage);
+		const totalHitDamage = this.getHitDamage(objA) + this.getHitDamage(objB);
 		if (totalHitDamage) {
 			objA.hit = 1;
 			objB.hit = 1;

@@ -34,7 +34,11 @@ export default class WorldHost {
 	addPlayer(playerId, connection) {
 		if (!playerId) return false;
 		const playerBoatIndex = this.findPlayerBoatIndex(playerId);
-		if (playerBoatIndex === -1) this.world.makeBoat(playerId);
+		if (playerBoatIndex === -1) {
+			// const pBoat =
+			this.world.makeBoat(playerId);
+			// pBoat.hp += 1000;
+		}
 		const boatIndex = this.findPlayerBoatIndex(playerId);
 		const { connectionId } = connection;
 		this.players[playerId] = { boatIndex, connectionId };
@@ -121,7 +125,9 @@ export default class WorldHost {
 		if (o.deleted) ro.deleted = true;
 		if (o.isNpc) ro.isNpc = true;
 		else { // Transfer certain data only for players, not for NPCs
-			if (o.globalBuoyancyVoxelPoints) ro.globalBuoyancyVoxelPoints = o.globalBuoyancyVoxelPoints;
+			if (o.globalBuoyancyVoxelPoints) { // eslint-disable-line no-lonely-if
+				ro.globalBuoyancyVoxelPoints = o.globalBuoyancyVoxelPoints;
+			}
 		}
 		// console.log(o.body.vertices);
 		return ro;

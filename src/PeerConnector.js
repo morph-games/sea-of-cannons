@@ -8,6 +8,16 @@ export default class PeerConnector {
 		this.incomingConnections = [];
 		this.outgoingConnections = [];
 		this.eventHandlers = {};
+		// Monitoring properties
+		this.monitoringOn = false;
+		this.monitorIntervalMs = 1000; // Check every 1 second
+
+		this.monitorStats = {
+			// 'connectionId': {
+			//	intervalId: null,
+			//	prevReports: {}, // A dictionary to store the previous stats for calculation
+			// }
+		};
 	}
 
 	async start(handlers = {}) {
@@ -43,6 +53,7 @@ export default class PeerConnector {
 		peer.on('connection', (conn) => {
 			this.incomingConnections.push(conn);
 			console.log('Incoming Peer connection', conn);
+			if (this.monitoringOn) this.startBandwidthMonitor(conn);
 			conn.on('open', (...args) => {
 				// console.log('Incoming connection open');
 				this.eventHandlers?.onIncomingOpen(conn, args);
@@ -84,6 +95,7 @@ export default class PeerConnector {
 			const conn = this.peer.connect(peerId);
 			conn.on('open', () => {
 				console.log('Out-going connection open');
+				if (this.monitoringOn) this.startBandwidthMonitor(conn);
 				resolve(conn);
 			});
 			conn.on('data', (data) => {
@@ -113,4 +125,86 @@ export default class PeerConnector {
 		console.warn('TODO - send to just one peer');
 		// TODO: Just send to one peerId?
 	}
+
+	async monitorBandwidth(conn) {
+		// Get the underlying RTCPeerConnection
+		const { peerConnection, connectionId } = conn;
+		// console.log('Monitor', connectionId);
+		if (peerConnection.connectionState !== 'connected') {
+			// Stop monitoring if the connection is no longer active
+			this.stopBandwithMonitor(conn);
+			console.log('Connection closed.', peerConnection.connectionState, 'Stopping bandwidth monitor.');
+			return;
+		}
+		try {
+			const { prevReports } = this.monitorStats[connectionId];
+			// Fetch the latest statistics
+			const stats = await peerConnection.getStats(null);
+			// console.log(stats);
+			// Iterate over the reports to find the 'outbound-rtp' stats for the data channel
+			stats.forEach((report) => {
+				// 'outbound-rtp' report contains statistics for data being sent.
+				// We're looking for totalBytesSent, which is a cumulative counter.
+				if (report.type === 'data-channel') {
+					const now = report.timestamp;
+					const { bytesSent, bytesReceived } = report;
+					const prevReport = prevReports[report.id];
+
+					if (prevReport) {
+						// Calculate the difference from the previous call
+						const timeElapsedSec = (now - prevReport.timestamp) / 1000;
+						const bytesSentDelta = bytesSent - prevReport.bytesSent;
+						const bytesReceivedDelta = bytesReceived - prevReport.bytesReceived;
+
+						// Calculate the rate (Bytes per second)
+						const bytesPerSecond = bytesSentDelta / timeElapsedSec;
+						const recBytesPerSecond = bytesReceivedDelta / timeElapsedSec;
+
+						// console.log(`Bandwidth (Outbound): ${bytesPerSecond.toFixed(2)} bytes/sec`);
+						// You can also calculate megabits per second (Mbps) for easier reading
+						const outMbps = (bytesPerSecond * 8) / (1024 * 1024);
+						const inMbps = (recBytesPerSecond * 8) / (1024 * 1024);
+						console.log(
+							'Bandwidth - Outbound:',
+							outMbps.toFixed(2),
+							'Mbps, Inbound:',
+							inMbps.toFixed(2),
+						);
+					}
+					// Store the current report for the next iteration's calculation
+					prevReports[report.id] = report;
+				}
+			});
+		} catch (error) {
+			console.error('Error fetching stats:', error);
+		}
+	}
+
+	startBandwidthMonitor(conn) {
+		const { connectionId } = conn;
+		this.monitorStats[connectionId] = {
+			intervalId: null,
+			prevReports: {},
+		};
+		console.log('Starting bandwidth monitor', connectionId, this.monitorStats);
+
+		// Start a periodic check
+		this.monitorStats[connectionId].intervalId = setInterval(() => {
+			this.monitorBandwidth(conn);
+		}, this.monitorIntervalMs);
+
+		// Keep track of the interval ID so you can stop it later
+		conn.on('close', () => this.stopBandwithMonitor(conn));
+		conn.on('error', () => this.stopBandwithMonitor(conn));
+	}
+
+	stopBandwithMonitor(conn) {
+		const { connectionId } = conn;
+		clearInterval(this.monitorStats[connectionId].intervalId);
+	}
+
+	// Example usage after your PeerJS connection is established:
+	// conn.on('open', function() {
+	//    startBandwidthMonitor(conn);
+	// });
 }
