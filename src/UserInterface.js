@@ -16,6 +16,10 @@ export default class UserInterface {
 		return Promise.resolve();
 	}
 
+	static getInteger(n) {
+		return Math.round(Number(n));
+	}
+
 	// setViewHeight() {
 	// const vh = window.innerHeight * 0.01;
 	// document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -96,8 +100,9 @@ export default class UserInterface {
 		if (highScore > 0) {
 			emojis = (myScore >= highScore) ? '🏆😄' : '☹️';
 		}
-		this.scoresElt.innerHTML = `Your score: ${myScore}<br>${emojis}
-			<br> High score: ${highScore}`;
+		this.scoresElt.innerHTML = `Your score: ${UserInterface.getInteger(myScore)}
+			<br>${emojis}
+			<br> High score: ${UserInterface.getInteger(highScore)}`;
 	}
 
 	renderConnection() {
@@ -136,8 +141,10 @@ export default class UserInterface {
 
 	renderDeath(playerBoat) {
 		if (!this.deathDialog) return;
-		if (playerBoat && playerBoat.isDead && !this.p2pDialog.open && !this.deathDialog.open) {
-			this.deathDialog.showModal();
+		if (playerBoat && playerBoat.isDead) {
+			if (!this.p2pDialog.open && !this.deathDialog.open) {
+				this.deathDialog.showModal();
+			}
 		} else if (this.deathDialog.open) {
 			this.deathDialog.close();
 		}

@@ -235,12 +235,14 @@ export default class World {
 		});
 		Body.setAngle(body, 0.3);
 		this.addToWorld(body);
+		const variants = entType.textures?.map((t, i) => i) || [0];
 		const boat = {
 			isBoat: true,
 			playerId,
 			entityTypeKey,
 			group, // pass this to cannonballs to avoid collisions
 			body,
+			variant: pickRand(variants),
 			direction: 1, // 1 or -1
 			throttle: 0, // between -1 and 1
 			submerged: 0,

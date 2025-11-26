@@ -113,6 +113,7 @@ export default class WorldHost {
 		if (o.entityTypeKey) ro.entityTypeKey = o.entityTypeKey;
 		if (o.boatIndex) ro.boatIndex = o.boatIndex;
 		if (o.direction) ro.direction = o.direction;
+		if (o.variant) ro.variant = o.variant;
 		if (o.width) ro.width = o.width;
 		if (o.height) ro.height = o.height;
 		if (o.hp) ro.hp = o.hp;

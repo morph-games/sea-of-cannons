@@ -91,26 +91,48 @@ export default class Renderer {
 		await this.app.init({ background: '#2d1e2f', resizeTo: window });
 		// Append the application canvas to the document body
 		document.body.appendChild(this.app.canvas);
-
-		this.waterTexture = await Assets.load('images/water01.png');
-		this.cloudTexture1 = await Assets.load('images/cloud01.png');
-		this.cloudTexture2 = await Assets.load('images/cloud02.png');
-		this.cloudTextures = [this.cloudTexture1, this.cloudTexture2];
-		this.crateTexture = await Assets.load('images/crate01.png');
-		this.ballTexture = await Assets.load('images/cannonball01.png');
-		this.boatRightTexture = await Assets.load('images/boat01-right.png');
-		this.boatLeftTexture = await Assets.load('images/boat01-left.png');
-		this.puffTexture = await Assets.load('images/puff-8x8.png');
-		this.bgTexture = await Assets.load('images/sky-water-bg.png');
-		// this.bgTexture = await Assets.load('images/water01.png');
-		[
-			// waterTexture,
-			...this.cloudTextures, this.crateTexture,
-			this.boatRightTexture, this.boatLeftTexture, this.ballTexture,
-			this.puffTexture, this.bgTexture,
-		].forEach((texture) => { texture.source.scaleMode = 'nearest'; });
+		// Define all the textures: alias and source
+		const assetLoadArray = [
+			['water', 'images/water01.png'],
+			['cloud01', 'images/cloud01.png'],
+			['cloud02', 'images/cloud02.png'],
+			['crate', 'images/crate01.png'], // TODO: move to entity?
+			['cannonball', 'images/cannonball01.png'], // TODO: move to entity?
+			['puff', 'images/puff-8x8.png'],
+			['skyWaterBg', 'images/sky-water-bg.png'],
+		];
+		// Entity types can have a `texture` string, or a `textures` array of variants, each of
+		// which is an array of strings.
+		Object.keys(entityTypes).forEach((entKey) => {
+			const ent = entityTypes[entKey];
+			if (ent.texture) {
+				assetLoadArray.push([entKey, `images/${ent.texture}.png`]);
+			}
+			if (ent.textures) {
+				ent.textures.forEach((variant, variantIndex) => {
+					variant.forEach((texture, directionIndex) => {
+						assetLoadArray.push([
+							`${entKey}-${variantIndex}-${directionIndex}`,
+							`images/${texture}.png`,
+						]);
+					});
+				});
+			}
+		});
+		await Assets.load(assetLoadArray.map((item) => {
+			return { alias: item[0], src: item[1] };
+		}));
+		// Change the scaleMode value to make all textures pixelated
+		assetLoadArray.forEach((item) => {
+			const [alias] = item;
+			if (alias === 'water') return; // Want water to get blurry
+			const texture = Assets.get(alias);
+			texture.source.scaleMode = 'nearest';
+			// texture.label = alias; // Doesn't work?
+		});
+		this.cloudTextures = [Assets.get('cloud01'), Assets.get('cloud02')];
 		// Create the particle controller now that we have the puff texture
-		this.particleController = new ParticleController(this.worldContainer, this.puffTexture);
+		this.particleController = new ParticleController(this.worldContainer, Assets.get('puff'));
 		// Make buoyancy circles for debugging
 		for (let i = 0; i < 100; i += 1) {
 			const circle = new Graphics().circle(0, 0, 4).fill('#777777');
@@ -125,8 +147,9 @@ export default class Renderer {
 
 	makeBackground() {
 		// TODO: Can we just repeat a sprite instead of bothering with a mesh plane?
+		const texture = Assets.get('skyWaterBg');
 		const sky = new MeshPlane({
-			texture: this.bgTexture,
+			texture,
 			verticesX: 4,
 			verticesY: 4,
 		});
@@ -135,8 +158,8 @@ export default class Renderer {
 		sky.y = -1000;
 		const WORLD_WIDTH = 28000; // TODO: Get from the world?
 		sky.width = WORLD_WIDTH;
-		sky.height = this.bgTexture.height; // Actual height of the texture
-		const repeat = WORLD_WIDTH / this.bgTexture.width;
+		sky.height = texture.height; // Actual height of the texture
+		const repeat = WORLD_WIDTH / texture.width;
 		Renderer.repeatTextureHorizontally(sky, repeat);
 		this.bgContainer.addChild(sky);
 	}
@@ -158,7 +181,10 @@ export default class Renderer {
 
 	makeVisualBoat(boat, arr) {
 		const vb = new Container();
-		const sprite = new Sprite(this.boatRightTexture);
+		const textureAlias = `${boat.entityTypeKey}-${boat.variant || 0}-0`;
+		vb.currentTextureAlias = textureAlias;
+		const sprite = Sprite.from(textureAlias);
+		sprite.label = textureAlias;
 		vb.addChild(sprite);
 		const entType = entityTypes[boat.entityTypeKey];
 		sprite.width = entType.width;
@@ -170,7 +196,7 @@ export default class Renderer {
 	}
 
 	makeVisualCannonball() {
-		const sprite = new Sprite(this.ballTexture);
+		const sprite = Sprite.from('cannonball');
 		sprite.scale = 1;
 		sprite.anchor.set(0.5);
 		this.visualCannonballs.push(sprite);
@@ -180,7 +206,7 @@ export default class Renderer {
 	}
 
 	makeVisualCrate() {
-		const sprite = new Sprite(this.crateTexture);
+		const sprite = Sprite.from('crate');
 		sprite.scale = 2;
 		sprite.anchor.set(0.5);
 		this.visualCrates.push(sprite);
@@ -195,7 +221,7 @@ export default class Renderer {
 		// const texture2 = await Assets.load('./images/wavetexture.png');
 		// #1099bb
 		const plane = new MeshPlane({
-			texture: this.waterTexture,
+			texture: Assets.get('water'),
 			verticesX: waterChunk.vertCount.x,
 			verticesY: waterChunk.vertCount.y,
 		});
@@ -230,10 +256,14 @@ export default class Renderer {
 			if (!vb) {
 				vb = this.makeVisualBoat(b, this.visualBoats);
 			}
-			const directionTexture = b.direction < 0 ? this.boatLeftTexture : this.boatRightTexture;
+			const directionIndex = b.direction < 0 ? 0 : 1;
+			const textureAlias = `${b.entityTypeKey}-${b.variant || 0}-${directionIndex}`;
+			// TODO: Rather than store currentTextureAlias, and compare it,
+			// can we get the alias from the sprite?
 			const sprite = vb.children[0];
-			if (directionTexture.label !== sprite.texture.label) {
-				sprite.texture = directionTexture;
+			if (textureAlias !== vb.currentTextureAlias) {
+				sprite.texture = Assets.get(textureAlias);
+				vb.currentTextureAlias = textureAlias;
 			}
 			vb.x = b.x;
 			vb.y = b.y;

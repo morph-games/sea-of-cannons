@@ -26,6 +26,13 @@ const defaultEntityType = {
 
 const tug = {
 	...defaultEntityType,
+	textures: [
+		['boat01-left', 'boat01-right'],
+		['boat02-left', 'boat02-right'],
+		['boat03-left', 'boat03-right'],
+		['boat04-left', 'boat04-right'],
+		['boat05-left', 'boat05-right'],
+	],
 	width: 100,
 	height: 100 / 2,
 	// TODO: Use polygon points for physical shape?
@@ -36,7 +43,6 @@ const tug = {
 	],
 	physicalWidth: 100,
 	physicalHeight: 100 / 4,
-	texture: '???', // ??
 	// All the points are relative/local to the boat's center of mass
 	buoyancyVoxelPoints: getBuoyancyVoxelPoints(100, 100 / 2, BUOYANCY_VOXEL_SIZE), // ??
 	smokeEmissionPoints: [], // ?? WIP
