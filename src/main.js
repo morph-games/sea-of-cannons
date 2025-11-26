@@ -135,13 +135,16 @@ window.player = player;
 		ui.renderPlayers(playerCount);
 		ui.renderScore(myBoat?.score || 0, highScore);
 		ui.renderThrottle(myBoat?.throttle || 0);
-		ui.renderHealth(myBoat?.hp || 0);
+		ui.renderHealth(myBoat?.hp);
+		ui.renderCargo(myBoat?.cargo);
 		ui.renderDeath(myBoat);
 
 		if (keysDown.a || keysDown.ArrowLeft || keysDown.ButtonLeft) {
 			player.sendCommand('MV', -1);
 		} else if (keysDown.d || keysDown.ArrowRight || keysDown.ButtonRight) {
 			player.sendCommand('MV', 1);
+		} else if (keysDown.r || keysDown.ButtonRepair) {
+			player.sendCommand('RE');
 		}
 		if (keysDown['c']) { // eslint-disable-line dot-notation
 			const pos = camera.getWorldCoordinates(mousePosition.x, mousePosition.y);

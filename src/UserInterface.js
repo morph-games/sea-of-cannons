@@ -1,3 +1,7 @@
+import cargoTypes from './cargoTypes.js';
+
+const $id = (id) => document.getElementById(id);
+
 export default class UserInterface {
 	constructor(player) {
 		this.player = player;
@@ -27,12 +31,12 @@ export default class UserInterface {
 
 	async init() {
 		await UserInterface.waitForDOM();
-		const $id = (id) => document.getElementById(id);
 		this.scoresElt = $id('scores');
 		// this.connElt = $id('conn-details');
 		this.currentConnection = $id('current-connection');
 		this.healthElt = $id('health');
 		this.throttleElt = $id('throttle');
+		this.cargoElt = $id('cargo');
 		this.deathDialog = $id('death');
 		this.p2pDialog = $id('p2p-dialog');
 		this.hostNameInput = $id('host-name');
@@ -87,11 +91,24 @@ export default class UserInterface {
 			this.p2pDialog.close();
 			return true;
 		}
+		if (target.closest('.tabs')) {
+			const button = target.closest('button');
+			if (button && button.dataset.tab) {
+				const topUi = $id('top-ui');
+				['ship', 'rep', 'p2p'].forEach((n) => {
+					const className = `tabs-open-${n}`;
+					console.log(topUi.classList);
+					if (n === button.dataset.tab) topUi.classList.toggle(className);
+					else topUi.classList.remove(className);
+				});
+				return true;
+			}
+		}
 		return false;
 	}
 
 	renderPlayers(playerCount) {
-		this.playersElt.innerText = `${playerCount} player${playerCount > 1 ? 's' : ''}`;
+		this.playersElt.innerText = `${playerCount} player${playerCount > 1 ? 's' : ''} online`;
 	}
 
 	renderScore(myScore, highScore) {
@@ -134,9 +151,25 @@ export default class UserInterface {
 		this.throttleElt.innerText = text;
 	}
 
-	renderHealth(hp) {
+	renderHealth(hp = 0) {
 		if (!this.healthElt) return;
-		this.healthElt.innerText = `HP: ${hp}`;
+		const text = `HP: ${hp}`;
+		if (this.healthElt.innerText !== text) this.healthElt.innerText = text;
+	}
+
+	renderCargo(cargo = []) {
+		if (!this.cargoElt) return;
+		const html = cargo.map((cargoSlot) => {
+			const [cargoTypeKey = '', amount = 0] = cargoSlot || [];
+			const isEmpty = amount === 0;
+			let { name = '?' } = cargoTypes[cargoTypeKey] || {};
+			if (isEmpty) name = 'Empty';
+			return `<li class="cargo-slot ${isEmpty ? 'cargo-slot--empty' : ''}">
+				<div class="cargo-slot-block">${isEmpty ? '' : UserInterface.getInteger(amount)}</div>
+				<div class="cargo-slot-name">${name}</div>
+			</li>`;
+		}).join('');
+		if (html !== this.cargoElt.innerHTML) this.cargoElt.innerHTML = html;
 	}
 
 	renderDeath(playerBoat) {

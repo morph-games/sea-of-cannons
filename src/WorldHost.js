@@ -7,8 +7,8 @@ import gameConfig from './gameConfig.js';
 export default class WorldHost {
 	constructor() {
 		this.world = null;
-		this.tickTime = 1000 / 60; // ms
-		this.tickTimer = null;
+		// this.tickTime = 1000 / 60; // ms
+		// this.tickTimer = null;
 		this.players = {};
 		this.syncTime = 10; // ms
 		this.syncTimer = null;
@@ -55,13 +55,13 @@ export default class WorldHost {
 		this.world.deleteBoat(pId);
 	}
 
-	tick(lastTime) {
-		const now = performance.now();
-		const deltaTime = (now - lastTime) / this.tickTime; // Should be close to 1
-		// console.log(deltaTime);
-		this.world.update(deltaTime);
-		this.tickTimer = setTimeout(() => this.tick(now), this.tickTime);
-	}
+	// tick(lastTime) {
+	// const now = performance.now();
+	// const deltaTime = (now - lastTime) / this.tickTime; // Should be close to 1
+	// // console.log(deltaTime);
+	// this.world.update(deltaTime);
+	// this.tickTimer = setTimeout(() => this.tick(now), this.tickTime);
+	// }
 
 	async startConnector() {
 		await this.connector.start({
@@ -82,7 +82,7 @@ export default class WorldHost {
 		window.w = this.world;
 		this.world.setup();
 		this.world.startPhysics();
-		this.tick(performance.now());
+		// this.tick(performance.now());
 		try {
 			await this.startConnector();
 		} catch (err) {
@@ -121,6 +121,7 @@ export default class WorldHost {
 		if (o.firing) ro.firing = o.firing;
 		if (o.isDead) ro.isDead = o.isDead;
 		if (o.submergedPercent) ro.submergedPercent = o.submergedPercent;
+		if (o.cargo) ro.cargo = o.cargo;
 		['deep', 'score', 'throttle'].forEach((prop) => {
 			if (o[prop] || o[prop] === 0) ro[prop] = o[prop];
 		});
@@ -167,8 +168,8 @@ export default class WorldHost {
 	}
 
 	async stop() {
-		clearTimeout(this.syncTimer);
-		clearTimeout(this.tickTimer);
+		// clearTimeout(this.syncTimer);
+		// clearTimeout(this.tickTimer);
 		this.world?.stopPhysics();
 		await this.connector.stop();
 	}
@@ -200,6 +201,8 @@ export default class WorldHost {
 			this.world.fireCannonballFromBoat(boatIndex, aimPosition);
 		} else if (command === 'RS') { // Respawn
 			this.world.makeBoat(playerId, boatIndex);
+		} else if (command === 'RE') {
+			this.world.repairBoat(boatIndex);
 		}
 	}
 }

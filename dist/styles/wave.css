@@ -121,6 +121,7 @@ input:read-only {
 	/* border: solid 1px blue; */
 	gap: 1em;
 	padding: 1em;
+	user-select: none;
 }
 
 .top-ui-row > div {
@@ -219,3 +220,74 @@ input:read-only {
 	text-align: center;
 }
 
+.tabs {
+	justify-content: space-around;
+	border-bottom: solid 1px #48888566;
+	padding-bottom: 0;
+}
+.tabs button {
+	border-color: transparent;
+	background-color: transparent;
+	border-radius: 0.5em 0.5em 0 0;
+	border-bottom-width: 0;
+}
+.tabs button:hover {
+	background: #3f5b7477;
+	border: solid 1px #488885;
+	border-bottom-color: transparent;
+}
+
+.tab-section {
+	height: 0;
+	overflow: hidden;
+	opacity: 0;
+	padding: 0;
+	transition: all 0.2s ease-in-out;
+	justify-content: center;
+	align-items: center;
+	gap: calc(1em + 1vmin);
+}
+.tabs-open-ship .tab-section-ship,
+.tabs-open-rep .tab-section-rep,
+.tabs-open-p2p .tab-section-p2p {
+	height: auto;
+	max-height: 20vh;
+	opacity: 1;
+	padding: calc(1em + 1vmin);
+}
+.tabs-open-ship .tab-ship,
+.tabs-open-rep .tab-rep,
+.tabs-open-p2p .tab-p2p {
+	background-color: #392945;
+	border-color: #48888566;
+	border-bottom: solid 2px #392945;
+	margin-bottom: -1px;
+}
+
+
+#cargo {
+	display: flex;
+	flex-direction: row;
+}
+.cargo-slot {
+	display: block;
+	margin: 0 1em 0 0;
+	padding: 0;
+	color: #7b6268;
+}
+.cargo-slot--empty {
+	opacity: 0.3;
+}
+.cargo-slot-block {
+	border: solid 1px #7b6268;
+	color: #9c807e;
+	font-size: 120%;
+	padding: 0.2em;
+	width: 2em;
+	height: 2em;
+}
+.cargo-slot-name {
+	font-size: 80%;
+	width: 100%;
+	text-align: center;
+}

@@ -16,6 +16,9 @@ export default class Player {
 		this.boats = [];
 		this.worldTotalTime = 0;
 		this.myBoatIndex = -1;
+		this.sendCommandCooldown = 0;
+		this.sendCommandDebounceTimerId = null;
+		this.sendCommandDebounceTime = 20; // ms
 	}
 
 	makeId() {
@@ -138,17 +141,29 @@ export default class Player {
 		if (command === 'CONNECT') {
 			const peerId = params;
 			await this.connectToWorld(peerId);
-			return;
+			return true;
 		}
 		if (command === 'HOST') {
 			// TODO
-			return;
+			return true;
 		}
 		if (this.isHosting) {
 			this.worldHost.handleCommand(command, params, this.id);
-			return;
+			return true;
 		}
+		// We don't want too many commands to be sent -- too much bandwidth, and might overwhelm
+		// the world host -- so we throttle / debounce the send command. It will silently fail
+		// if you attempt a send command within the timeframe. This should be fine for the user
+		// because many commands (move, repair) are activated by holding down a key or button.
+		if (this.sendCommandCooldown) return false;
+		this.sendCommandCooldown = this.sendCommandDebounceTime;
+		clearTimeout(this.sendCommandDebounceTimerId);
+		this.sendCommandDebounceTimerId = setTimeout(() => {
+			this.sendCommandCooldown = 0;
+		}, this.sendCommandDebounceTime);
+		// Send the actual command
 		this.connector.send({ command: [command, params], playerId: this.id });
+		return true;
 	}
 
 	getWaterChunk() {

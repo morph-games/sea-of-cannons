@@ -50,7 +50,11 @@ const tug = {
 	density: 3,
 	maxHp: 100,
 	hitDamage: 1,
-	rateOfFire: 10, // x shots per deltaTime?
+	rateOfFire: 1, // x shots per second
+	cargoSlots: 4,
+	cargoSlotSize: 24,
+	repairCooldownTime: 500, // ms
+	waterFrictionScale: 0.5, // TODO: Can we avoid this?
 };
 
 export default {
@@ -61,13 +65,14 @@ export default {
 		maxHp: 10,
 		hitDamage: 45,
 		decaysUnderWater: true,
-		waterFrictionScale: 0.5,
-		buoyancyMultipler: 0.0014,
+		waterFrictionScale: 1,
+		buoyancyMultipler: 1,
 	},
 	woodCrate: {
 		...defaultEntityType,
 		maxHp: 10,
-		buoyancyMultipler: 0.1, // TODO: Don't use this as a hack
+		decaysUnderWater: true,
+		buoyancyMultipler: 1, // TODO: Don't use this as a hack
 	},
 	pirateTug: {
 		...tug,

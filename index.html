@@ -13,25 +13,35 @@
 			<div class="loading">Loading...</div>
 		</div>
 		<div id="ui">
-			<div id="top-ui">
-				<div class="top-ui-row">
-					<div id="conn-details">
-						<button type="button">P2P <span class="key-hint">p</span></button>
-						<span id="current-connection"></span>
-					</div>
-					<div id="players"></div>
-					<div id="scores"></div>
+			<div id="top-ui" class="tabs-open-ship">
+				<div class="top-ui-row tabs">
+					<button type="button" data-tab="ship" class="tab-ship">⚓Ship</button>
+					<button type="button" data-tab="rep" class="tab-rep">👑Rep.</button>
+					<button type="button" data-tab="p2p" class="tab-p2p">🫂P2P</button>
 				</div>
-				<div class="top-ui-row">
+				<div class="top-ui-row tab-section tab-section-ship">
 					<div id="health">
 						<!-- health -->
 					</div>
 					<div>
 						<div id="throttle"></div>
 					</div>
+					<div id="cargo">
+						<!-- <li> ... </li> -->
+					</div>
 					<div>
 						<!-- fuel -->
 					</div>
+				</div>
+				<div class="top-ui-row tab-section tab-section-rep">
+					<div id="scores"></div>
+				</div>
+				<div class="top-ui-row tab-section tab-section-p2p">
+					<div id="conn-details">
+						<button type="button">P2P <span class="key-hint">p</span></button>
+						<span id="current-connection"></span>
+					</div>
+					<div id="players"></div>
 				</div>
 			</div>
 			<dialog id="death">
@@ -63,17 +73,18 @@
 			</dialog>
 		</div>
 		<div id="controls">
-			<button type="button" class="go-left">&larr;
+			<button type="button" class="go-left">
+				&larr; Left
 				<span class="key-hint">a</span>
 			</button>
-			<button type="button" class="go-right">&rarr;
-				<span class="key-hint">d</span>
-			</button>
-			<!--
-			<button type="button" class="repair">🛠️
+			<button type="button" class="repair">
+				Repair
 				<span class="key-hint">r</span>
 			</button>
-			-->
+			<button type="button" class="go-right">
+				Right &rarr;
+				<span class="key-hint">d</span>
+			</button>
 		</div>
 		<!-- <div style="border: solid 1px red; position: absolute; bottom: 0;">test</div> -->
 		<!--

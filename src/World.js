@@ -58,44 +58,6 @@ export default class World {
 		this.idealBoatNumber = 18; // Would like 30, but impacting bandwidth
 
 		this.cutOffMomentum = 2820; // cannonball velocity length 3 * cannonball mass
-
-		/*
-		const render = Render.create({
-			element: document.body,
-			engine,
-			options: {
-				width: window.innerWidth - 12,
-				height: window.innerHeight - 12,
-				// showAngleIndicator: true,
-				// showCollisions: true,
-				// showIds: true,
-				// showAxes: true,
-				// showPositions: true,
-				// showSeparations: true,
-				// showDebug: true,
-				wireframes: false,
-			},
-			renderer: { element: document.getElementById('world') },
-		});
-		render.context.imageSmmothingEnabled = false;
-		render.context.mozImageSmoothingEnabled = false;
-		render.context.webkitImageSmoothingEnabled = false;
-		Render.run(render);
-
-		const mouse = Mouse.create(render.canvas);
-		const mouseConstraint = MouseConstraint.create(engine, {
-			mouse,
-			constraint: {
-				stiffness: 0.2,
-				render: {
-					visible: false,
-				},
-			},
-		});
-		this.addToWorld(mouseConstraint);
-		// keep the mouse in sync with rendering
-		render.mouse = mouse;
-		*/
 	}
 
 	setup() {
@@ -118,7 +80,12 @@ export default class World {
 			if (!event.pairs.length) return;
 			event.pairs.forEach((pair) => this.handleCollisionPair(pair));
 		});
-		// Events.on(this.runner, 'afterUpdate', (...args) => console.log('up', args));
+		const expectedMs = 1000 / 60; // 1 second / 60 frames per second
+		// Update the world after each matter-js physics update
+		Events.on(this.runner, 'afterUpdate', (event) => {
+			// TODO: event.source.frameDeltaHistory can help show FPS
+			this.update(event.source.delta, event.source.delta / expectedMs);
+		});
 	}
 
 	stopPhysics() {
@@ -217,6 +184,7 @@ export default class World {
 			// physicalWidth, physicalHeight,
 			density, maxHp,
 			vertexSet,
+			cargoSlots,
 		} = entType;
 		const rightmost = RIGHT - LEFT - (SPAWN_PADDING * 2);
 		const x = SPAWN_PADDING + (Math.random() * rightmost);
@@ -231,6 +199,8 @@ export default class World {
 		Body.setAngle(body, 0.3);
 		this.addToWorld(body);
 		const variants = entType.textures?.map((t, i) => i) || [0];
+		const cargo = []; // ('x').repeat(cargoSlots).map(() => null);
+		cargo.length = cargoSlots;
 		const boat = {
 			isBoat: true,
 			playerId,
@@ -251,7 +221,9 @@ export default class World {
 			flooded: 0, // 0 - 1
 			globalBuoyancyVoxelPoints: [], // Global/world coordinates
 			rateOfFire: entType.rateOfFire,
+			repairCooldown: 1000,
 			fireCooldown: randInt(1000 / entType.rateOfFire),
+			cargo,
 		};
 		if (respawnBoatIndex >= 0) { // We're replacing an existing (probably dead) boat
 			this.boats[respawnBoatIndex] = boat;
@@ -295,6 +267,18 @@ export default class World {
 		// Body.setVelocity(body, { x: (x / 10) + (direction * mag), y });
 	}
 
+	repairBoat(index) {
+		const boat = this.boats[index];
+		const entType = entityTypes[boat.entityTypeKey];
+		if (boat.hp >= entType.maxHp) return;
+		const hasRepairCooldown = (typeof boat.repairCooldown === 'number');
+		if (hasRepairCooldown && boat.repairCooldown > 0) return;
+		const amountLeftToRemove = this.removeCargo(boat, 'SU', 1);
+		if (amountLeftToRemove > 0) return; // Repair failed
+		boat.hp += 1; // Repair success
+		if (hasRepairCooldown) boat.repairCooldown = entType.repairCooldownTime || 60;
+	}
+
 	// Returns a Matter Vector
 	static getWorldCoordinatesFromRelative(body, point) {
 		const { x, y } = point;
@@ -329,7 +313,7 @@ export default class World {
 		return entity.volume;
 	}
 
-	applyEngines(entity, deltaTime = 1) { // eslint-disable-line class-methods-use-this
+	applyEngines(entity, deltaTimeUnit = 1) { // eslint-disable-line class-methods-use-this
 		if (!entity.throttle) return;
 		if (!entity.submerged) return;
 		const { body } = entity;
@@ -338,14 +322,14 @@ export default class World {
 		const boatDirectionVector = globalDirectionVector.rotate(-body.angle);
 		// body.angle + (Math.PI / 2);
 		const newVel = vec2(body.velocity.x, body.velocity.y)
-			.add(boatDirectionVector.scale(ENGINE_MAGNITUDE * deltaTime));
+			.add(boatDirectionVector.scale(ENGINE_MAGNITUDE * deltaTimeUnit));
 		Body.setVelocity(body, newVel);
 		entity.throttle *= 0.9;
 		if (Math.abs(entity.throttle) < 0.05) entity.throttle = 0;
 	}
 
 	/** Mutates the entity to apply water physics */
-	applyFlotation(entity, deltaTime = 1) {
+	applyFlotation(entity, deltaTimeUnit = 1) {
 		if (entity.removed) return;
 		const { body } = entity;
 		const entType = entityTypes[entity.entityTypeKey];
@@ -374,14 +358,24 @@ export default class World {
 
 		const submergedPercent = bvSubmergedCount / bvPoints.length; // value between 0 and 1
 		entity.submerged = submergedPercent > 0;
-		const WATER_FRICTION_SCALE = 10;
+		// const WATER_FRICTION_SCALE = 10;
+		const WATER_VEL_FRICTION = 0.15;
 
 		if (submergedPercent > 0) {
+			/*
+			// TODO: Should we not normalize this? The faster you go the more friction?
 			const frictionForce = vec2(body.velocity).normalize(-1)
-				.scale(WATER_FRICTION_SCALE * deltaTime * submergedPercent * waterFrictionScale);
+				.scale(WATER_FRICTION_SCALE * deltaTimeUnit * submergedPercent * waterFrictionScale);
 			// Apply water friction
 			Body.applyForce(body, body.position, frictionForce);
-			// Should we apply more friction in the y coordinate to prevent bounce?
+			*/
+
+			// TODO: Should friction be based on area or mass or current velocity?
+			const velFriction = 1 - (
+				WATER_VEL_FRICTION * waterFrictionScale * submergedPercent * deltaTimeUnit
+			);
+			const newVelocity = Matter.Vector.mult(body.velocity, velFriction);
+			Body.setVelocity(body, newVelocity);
 			/*
 			// TODO: Remove once we get buoyancy working?
 			if (body.velocity.y > 0) {
@@ -394,8 +388,8 @@ export default class World {
 			// Rotational friction
 			// TODO: Remove once we get buoyancy working?
 			const ANGULAR_FRICTION = 0.8; // Worst friction when fully submerged
-			const angularSpeedFriction = 1 - ((1 - ANGULAR_FRICTION) * submergedPercent * deltaTime);
-			// TODO: How to use deltaTime here?
+			const angularSpeedFriction = 1 - ((1 - ANGULAR_FRICTION) * submergedPercent * deltaTimeUnit);
+			// TODO: How to use deltaTimeUnit here?
 			Body.setAngularSpeed(body, Body.getAngularSpeed(body) * angularSpeedFriction);
 
 			// TODO: do better buoyancy here
@@ -423,6 +417,7 @@ export default class World {
 
 	applyDamage(entity, damageAmount = 0) { // eslint-disable-line class-methods-use-this
 		entity.hp = Math.floor((entity.hp || 0) - damageAmount);
+		if (entity.hp <= 0) this.killEntity(entity);
 	}
 
 	killEntity(entity) { // eslint-disable-line class-methods-use-this
@@ -432,15 +427,15 @@ export default class World {
 		if (entity.decaying === undefined) entity.decaying = 500;
 	}
 
-	decay(entity, deltaTime = 1) {
+	decay(entity, deltaTimeUnit = 1) {
 		if (entity.removed) return;
 		const entType = entityTypes[entity.entityTypeKey];
 		if (entType.decaysUnderWater && entity.submerged) {
-			const dmg = deltaTime + (entity.deep * 3);
+			const dmg = deltaTimeUnit + (entity.deep * 3);
 			this.applyDamage(entity, dmg);
 		}
 		if (entity.hp <= 0) this.killEntity(entity);
-		if (entity.decaying) entity.decaying -= deltaTime;
+		if (entity.decaying) entity.decaying -= deltaTimeUnit;
 		if (entity.decaying <= 0) this.removeEntity(entity);
 		if (entity.hit) entity.hit = clamp(entity.hit - 0.1, 0, 1);
 		if (entity.firing) entity.firing = clamp(entity.firing - 0.1, 0, 1);
@@ -523,7 +518,7 @@ export default class World {
 		// When the boat is stable its angle is 0, so we can offset the min and max fire
 		// angle based on that
 		const minAngle = HALF_PI - boatAngle;
-		const maxAngle = (1.5 * Math.PI) + boatAngle;
+		const maxAngle = (1.5 * Math.PI) - boatAngle;
 		fireVector.setAngle(clamp(angle, minAngle, maxAngle));
 		return fireVector;
 	}
@@ -561,26 +556,29 @@ export default class World {
 	}
 
 	// TODO: Run this in-sync with the Matter runner
-	update(deltaTimeParam = 1) {
-		const deltaTime = clamp(deltaTimeParam, 0, 10);
-		if (deltaTimeParam > 10) console.warn('Delta time:', deltaTimeParam, 'clamped to', deltaTime);
-		this.totalTime += deltaTime;
-		this.waterChunk.update(deltaTime, this.totalTime);
+	update(deltaTime = 16, deltaTimeUnitParam = 1) {
+		const deltaTimeUnit = clamp(deltaTimeUnitParam, 0, 10);
+		if (deltaTimeUnitParam > 10) {
+			console.warn('Delta time:', deltaTimeUnitParam, 'clamped to', deltaTimeUnit);
+		}
+		this.totalTime += deltaTimeUnit;
+		this.waterChunk.update(deltaTimeUnit, this.totalTime);
 		const allPhysicalEntities = [...this.crates, ...this.boats, ...this.cannonballs];
 		allPhysicalEntities.forEach((ent) => {
 			// TODO: Handle the edges differently
 			// setting the position can mess the matter-js physics up
 			ent.body.position.x = clamp(ent.body.position.x, this.min.x, this.max.x);
 			ent.body.position.y = clamp(ent.body.position.y, this.min.y, this.max.y);
-			this.applyFlotation(ent, deltaTime);
-			this.applyEngines(ent, deltaTime);
-			this.decay(ent, deltaTime);
+			this.applyFlotation(ent, deltaTimeUnit);
+			this.applyEngines(ent, deltaTimeUnit);
+			this.decay(ent, deltaTimeUnit);
 			// if (ent.isCannonball) console.log(vec2(ent.body.velocity).length(), ent.body.mass);
 		});
 		const deadBoats = [];
 		this.boats.forEach((b, boatIndex) => {
-			if (typeof b.fireCooldown === 'number') b.fireCooldown -= deltaTimeParam;
-			if (typeof b.planningCooldown === 'number') b.planningCooldown -= deltaTimeParam;
+			if (typeof b.fireCooldown === 'number') b.fireCooldown -= deltaTime;
+			if (typeof b.repairCooldown === 'number') b.repairCooldown -= deltaTime;
+			if (typeof b.planningCooldown === 'number') b.planningCooldown -= deltaTime;
 			if (b.isNpc) {
 				this.planBoat(b, boatIndex);
 				this.fireCannonballFromBoat(boatIndex);
@@ -614,6 +612,51 @@ export default class World {
 		return arr.find((b) => (b.body.id === body.id));
 	}
 
+	removeCargo(boat, cargoType, amount = 1) {
+		const entType = entityTypes[boat.entityTypeKey];
+		const { cargoSlots = 0 } = entType;
+		let amountLeftToRemove = amount;
+		const { cargo } = boat;
+		// Loop backwards to remove from right-most cargo slots first
+		for (let i = cargoSlots - 1; i >= 0; i -= 1) {
+			if (amountLeftToRemove > 0) {
+				if (cargo[i] && cargo[i][0] === cargoType && cargo[i][1] > 0) {
+					const removeAmount = Math.min(cargo[i][1], amount);
+					boat.cargo[i][1] -= removeAmount;
+					amountLeftToRemove -= removeAmount;
+				}
+			}
+		}
+		return amountLeftToRemove;
+	}
+
+	giveCargoToSlot(cargo, i, cargoType, amount = 0, cargoSlotSize = 0) {
+		if (amount <= 0) return 0;
+		let amountLeft = amount;
+		if (!cargo[i]) {
+			const givenToSlot = Math.min(cargoSlotSize, amountLeft);
+			cargo[i] = [cargoType, givenToSlot];
+			amountLeft -= givenToSlot;
+		} else if (cargo[i][0] === cargoType) {
+			const space = clamp(cargoSlotSize - cargo[i][1], 0, cargoSlotSize);
+			const givenToSlot = Math.min(cargoSlotSize, amountLeft, space);
+			cargo[i][1] += givenToSlot;
+			amountLeft -= givenToSlot;
+		}
+		// Else: If the cargo type is not the same, then the cargo slot is occupied
+		return amountLeft;
+	}
+
+	giveCargo(boat, cargoType, amount = 0) {
+		const entType = entityTypes[boat.entityTypeKey];
+		const { cargoSlots = 0, cargoSlotSize = 1 } = entType;
+		let amountLeft = amount;
+		for (let i = 0; i < cargoSlots; i += 1) {
+			amountLeft = this.giveCargoToSlot(boat.cargo, i, cargoType, amountLeft, cargoSlotSize);
+		}
+		// console.log('Gave', amount - amountLeft, 'to boat.', amountLeft, 'lost.');
+	}
+
 	giveCollisionScore(entA, entB) {
 		if (entA.removed || entB.removed) return;
 		let victim = null;
@@ -627,10 +670,16 @@ export default class World {
 			victim = entB;
 		}
 		// console.log('👹', attacker, '💀', victim);
-		if (attacker
-			&& victim && victim.isBoat && !victim.isDead
-		) {
-			attacker.score += 1;
+		if (attacker && victim && victim.isBoat) {
+			// TODO: This is flawed because you can gain a score by hitting a dead enemy
+			// (hopefully they will sink quickly and that will be rare)
+			if (victim.isDead) {
+				attacker.score += 2;
+				this.giveCargo(attacker, 'SU', 2 + randInt(12));
+			} else {
+				// Score for hitting, but not killing, an enemy
+				attacker.score += 1;
+			}
 		}
 	}
 
