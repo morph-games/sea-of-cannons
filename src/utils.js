@@ -30,9 +30,18 @@ function makeRandomId() {
 	].join('-');
 }
 
+const { PI } = Math;
+const TWO_PI = PI * 2;
+const HALF_PI = PI / 2;
+const QUARTER_PI = PI / 4;
+
 export {
 	clamp, lerp, isNumber, mod,
 	rand, randInt, pickRand,
 	radiansToDegrees,
 	makeRandomId,
+	PI,
+	TWO_PI,
+	HALF_PI,
+	QUARTER_PI,
 };

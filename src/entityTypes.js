@@ -49,6 +49,7 @@ const tug = {
 	cannonPoints: [{ x: 0, y: 0 }], // WIP
 	density: 3,
 	maxHp: 100,
+	hitDamage: 1,
 	rateOfFire: 10, // x shots per deltaTime?
 };
 

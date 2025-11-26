@@ -1,7 +1,7 @@
 import Matter from 'matter-js';
 import WaterChunk from './WaterChunk.js';
 import { vec2 } from './Vector2.js';
-import { randInt, clamp, pickRand, makeRandomId } from './utils.js';
+import { randInt, clamp, pickRand, makeRandomId, HALF_PI, TWO_PI } from './utils.js';
 import entityTypes from './entityTypes.js';
 
 const {
@@ -32,6 +32,8 @@ const NPC_PLAYER_ID_PREFIX = 'NPC';
 const BOAT_LABEL = 'Boat';
 const CANNONBALL_LABEL = 'Cannonball';
 const CRATE_LABEL = 'Crate';
+
+/* eslint-disable class-methods-use-this */
 
 export default class World {
 	constructor(boundaries = [LEFT, ROOF, RIGHT, FLOOR]) {
@@ -116,6 +118,7 @@ export default class World {
 			if (!event.pairs.length) return;
 			event.pairs.forEach((pair) => this.handleCollisionPair(pair));
 		});
+		// Events.on(this.runner, 'afterUpdate', (...args) => console.log('up', args));
 	}
 
 	stopPhysics() {
@@ -171,14 +174,12 @@ export default class World {
 		this.waterChunk.rippleDeltas[(xi * 2) + 1] = 100;
 	}
 
-	makeCannonball(boatIndex, aimPos) {
+	makeCannonball(boatIndex, spawnPos) {
 		const entityTypeKey = 'ironCannonball';
 		const entType = entityTypes[entityTypeKey];
 		// Spawn the cannonball near the boat
 		const boat = this.boats[boatIndex];
 		if (boat.removed || boat.isDead) return false;
-		// TODO: track data where the cannon is relative to the boat coordinates, and spawn there
-		const spawnPos = vec2(boat.body.position.x, boat.body.position.y - 10);
 		// const spawnPos = { x: boat.body.positionx, y: boat.body.position.y };
 		const { group } = boat;
 		const body = Bodies.circle(spawnPos.x, spawnPos.y, 8, {
@@ -191,12 +192,6 @@ export default class World {
 			density: entType.density,
 		});
 		this.addToWorld(body);
-		const forceMultiplier = 60;
-		// Direction of the force will be the vector from the spawn (cannon) to the position of
-		// the mouse cursor (aimPos).
-		const forceVector = vec2(aimPos).subtract(spawnPos).normalize().scale(forceMultiplier);
-		// console.log(aimPos, forceVector);
-		Body.applyForce(body, body.position, forceVector);
 		const cb = {
 			isCannonball: true,
 			boatIndex,
@@ -250,6 +245,7 @@ export default class World {
 			submergedPercent: 0, // 0 - 1
 			hit: 0, // 0 - 1
 			firing: 0, // 0 - 1
+			hitDamage: entType.hitDamage || 0,
 			hp: maxHp,
 			score: 0,
 			flooded: 0, // 0 - 1
@@ -502,20 +498,7 @@ export default class World {
 		boat.planningCooldown = 100;
 	}
 
-	fireCannonballFromBoat(boatIndex, aimPos) {
-		const boat = this.boats[boatIndex];
-		if (boat.removed || boat.isDead) return;
-		if (typeof boat.fireCooldown !== 'number' || boat.fireCooldown > 0) return;
-		const fireHeatUp = 1000 / (boat.rateOfFire || 1);
-		boat.fireCooldown = (fireHeatUp || 0) + randInt(fireHeatUp / 10);
-		boat.firing = 1;
-		if (aimPos) { // Typically for players
-			this.makeCannonball(boatIndex, aimPos);
-			return;
-		}
-		// Typically for NPCs...
-		const { target } = this.findTarget(boat, boat.aggroRange);
-		if (!target) return;
+	getNpcAimPosition(boat, target) {
 		// NOTE: Angle seems to be backwards from what I would expect - TODO LATER: Fix?
 		const targetDirection = (target.body.position.x < boat.body.position.x) ? 1 : -1;
 		const { preferredFireAngle = 0, randomFireAngle = 0 } = boat;
@@ -527,8 +510,50 @@ export default class World {
 			* targetDirection // point angle towards target
 			);
 		const fireVector = vec2(0, 1).setAngle(fireAngle, 100);
-		const aimPosition = vec2(boat.body.position).add(fireVector);
-		this.makeCannonball(boatIndex, aimPosition);
+		return vec2(boat.body.position).add(fireVector);
+	}
+
+	getBoatFireVector(spawnPos, aimPos, boatAngle) {
+		const fireVector = vec2(aimPos).subtract(spawnPos).normalize();
+		// Initial fire angle is 0 down, half Pi to the right, -half pi to the left, pi to the top
+		const angle = (fireVector.angle() + TWO_PI) % TWO_PI; // Make it positive
+		// Now the angle is half pi right, pi up, 1.5 pi left
+		// We want to limit this fire vector based on the boat's angle
+		// Whereas, the boat's angle is 0 to the right, -half pi to the top, +half pi to the bottom
+		// When the boat is stable its angle is 0, so we can offset the min and max fire
+		// angle based on that
+		const minAngle = HALF_PI - boatAngle;
+		const maxAngle = (1.5 * Math.PI) + boatAngle;
+		fireVector.setAngle(clamp(angle, minAngle, maxAngle));
+		return fireVector;
+	}
+
+	fireCannonballFromBoat(boatIndex, aimPos) {
+		const boat = this.boats[boatIndex];
+		if (boat.removed || boat.isDead) return;
+		if (typeof boat.fireCooldown !== 'number' || boat.fireCooldown > 0) return;
+		const fireHeatUp = 1000 / (boat.rateOfFire || 1);
+		boat.fireCooldown = (fireHeatUp || 0) + randInt(fireHeatUp / 10);
+		boat.firing = 1;
+		// Make the cannonball
+		// TODO: track data where the cannon is relative to the boat coordinates, and spawn there
+		const spawnPos = vec2(boat.body.position.x, boat.body.position.y - 10);
+		const cb = this.makeCannonball(boatIndex, spawnPos);
+		// Now we need to aim the cannonball
+		let aimPosition = aimPos; // Players typically will provide an aim position
+		if (!aimPosition) { // Typically for NPCs...
+			const { target } = this.findTarget(boat, boat.aggroRange);
+			if (!target) return;
+			aimPosition = this.getNpcAimPosition(boat, target);
+		}
+		const fireVector = this.getBoatFireVector(spawnPos, aimPosition, boat.body.angle);
+		// Finally apply force to the cannonball
+		const forceMultiplier = 60;
+		// Direction of the force will be the vector from the spawn (cannon) to the position of
+		// the mouse cursor (aimPos).
+		const forceVector = fireVector.scale(forceMultiplier);
+		// console.log(aimPos, forceVector);
+		Body.applyForce(cb.body, cb.body.position, forceVector);
 	}
 
 	respawnBoat(deadBoats) {
@@ -614,6 +639,7 @@ export default class World {
 		const { hitDamage = 0 } = entity;
 		const velLength = vec2(entity.body.velocity).length();
 		const momentum = velLength * entity.body.mass;
+		// console.log(entity, momentum, this.cutOffMomentum);
 		if (momentum < this.cutOffMomentum) return hitDamage / 10;
 		// TODO: blend the damage between the cutoff length?
 		return hitDamage;
@@ -625,6 +651,7 @@ export default class World {
 		const objB = this.findObjectFromBody(bodyB);
 		if (!objA || !objB) return;
 		const totalHitDamage = this.getHitDamage(objA) + this.getHitDamage(objB);
+		// console.log('💥', totalHitDamage);
 		if (totalHitDamage) {
 			objA.hit = 1;
 			objB.hit = 1;
