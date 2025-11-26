@@ -34,6 +34,7 @@ export default class UserInterface {
 		this.hostNameInput = $id('host-name');
 		this.connectNameInput = $id('connect-name');
 		this.playersElt = $id('players');
+		this.titleElt = $id('title');
 		// this.setViewHeight();
 		// window.addEventListener('resize', () => this.setViewHeight());
 	}
@@ -135,7 +136,15 @@ export default class UserInterface {
 
 	renderDeath(playerBoat) {
 		if (!this.deathDialog) return;
-		if (playerBoat && playerBoat.isDead && !this.p2pDialog.open) this.deathDialog.showModal();
-		else this.deathDialog.close();
+		if (playerBoat && playerBoat.isDead && !this.p2pDialog.open && !this.deathDialog.open) {
+			this.deathDialog.showModal();
+		} else if (this.deathDialog.open) {
+			this.deathDialog.close();
+		}
+	}
+
+	removeTitle() {
+		if (!this.titleElt) return;
+		this.titleElt.classList.add('title--removed');
 	}
 }

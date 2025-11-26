@@ -86,6 +86,8 @@ window.player = player;
 
 	const soundController = new SoundController();
 
+	ui.removeTitle();
+
 	let totalTime = 0;
 	let myBoat = null;
 	let previousBoats = [];
@@ -149,5 +151,6 @@ window.player = player;
 		}
 	});
 
+	window.ui = ui;
 	window.camera = camera;
 })();
