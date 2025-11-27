@@ -6,10 +6,13 @@
 		<title>Sea of Cannons</title>
 		<link rel="icon" type="image/x-icon" href="images/favicon.ico">
 		<link href="./styles/wave.css" rel="stylesheet" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=New+Rocker&family=Texturina:ital,opsz,wght@0,12..72,100..900;1,12..72,100..900&display=swap" rel="stylesheet">
 	</head>
 	<body>
 		<div id="title">
-			<h1>Sea of<br>Cannons</h1>
+			<h1>Sea <span class="of">of</span><br>Cannons</h1>
 			<div class="loading">Loading...</div>
 		</div>
 		<div id="ui">
@@ -20,8 +23,11 @@
 					<button type="button" data-tab="p2p" class="tab-p2p">🫂P2P</button>
 				</div>
 				<div class="top-ui-row tab-section tab-section-ship">
-					<div id="health">
-						<!-- health -->
+					<div>
+						<span id="health"><!-- health text --></span>
+						<div class="health-bar">
+							<div id="health-bar-inside"></div>
+						</div>
 					</div>
 					<div>
 						<div id="throttle"></div>
@@ -66,7 +72,7 @@
 					<h2 class="connect-title">Connect</h2>
 					<h2 class="connected-title">&check; Connected</h2>
 					Your friend's host:
-					<input type="text" id="connect-name" placeholder="???_wave_morph" />
+					<input type="text" id="connect-name" />
 					<button type="button" class="connect-action">Connect</button>
 				</div>
 				

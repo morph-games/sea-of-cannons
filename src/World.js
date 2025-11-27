@@ -3,6 +3,7 @@ import WaterChunk from './WaterChunk.js';
 import { vec2 } from './Vector2.js';
 import { randInt, clamp, pickRand, makeRandomId, HALF_PI, TWO_PI } from './utils.js';
 import entityTypes from './entityTypes.js';
+import Cargo from './Cargo.js';
 
 const {
 	Engine,
@@ -273,7 +274,7 @@ export default class World {
 		if (boat.hp >= entType.maxHp) return;
 		const hasRepairCooldown = (typeof boat.repairCooldown === 'number');
 		if (hasRepairCooldown && boat.repairCooldown > 0) return;
-		const amountLeftToRemove = this.removeCargo(boat, 'SU', 1);
+		const amountLeftToRemove = Cargo.removeCargo(boat, 'SU', 1);
 		if (amountLeftToRemove > 0) return; // Repair failed
 		boat.hp += 1; // Repair success
 		if (hasRepairCooldown) boat.repairCooldown = entType.repairCooldownTime || 60;
@@ -357,6 +358,7 @@ export default class World {
 		// then return.
 
 		const submergedPercent = bvSubmergedCount / bvPoints.length; // value between 0 and 1
+		entity.submergedPercent = submergedPercent;
 		entity.submerged = submergedPercent > 0;
 		// const WATER_FRICTION_SCALE = 10;
 		const WATER_VEL_FRICTION = 0.15;
@@ -612,51 +614,6 @@ export default class World {
 		return arr.find((b) => (b.body.id === body.id));
 	}
 
-	removeCargo(boat, cargoType, amount = 1) {
-		const entType = entityTypes[boat.entityTypeKey];
-		const { cargoSlots = 0 } = entType;
-		let amountLeftToRemove = amount;
-		const { cargo } = boat;
-		// Loop backwards to remove from right-most cargo slots first
-		for (let i = cargoSlots - 1; i >= 0; i -= 1) {
-			if (amountLeftToRemove > 0) {
-				if (cargo[i] && cargo[i][0] === cargoType && cargo[i][1] > 0) {
-					const removeAmount = Math.min(cargo[i][1], amount);
-					boat.cargo[i][1] -= removeAmount;
-					amountLeftToRemove -= removeAmount;
-				}
-			}
-		}
-		return amountLeftToRemove;
-	}
-
-	giveCargoToSlot(cargo, i, cargoType, amount = 0, cargoSlotSize = 0) {
-		if (amount <= 0) return 0;
-		let amountLeft = amount;
-		if (!cargo[i]) {
-			const givenToSlot = Math.min(cargoSlotSize, amountLeft);
-			cargo[i] = [cargoType, givenToSlot];
-			amountLeft -= givenToSlot;
-		} else if (cargo[i][0] === cargoType) {
-			const space = clamp(cargoSlotSize - cargo[i][1], 0, cargoSlotSize);
-			const givenToSlot = Math.min(cargoSlotSize, amountLeft, space);
-			cargo[i][1] += givenToSlot;
-			amountLeft -= givenToSlot;
-		}
-		// Else: If the cargo type is not the same, then the cargo slot is occupied
-		return amountLeft;
-	}
-
-	giveCargo(boat, cargoType, amount = 0) {
-		const entType = entityTypes[boat.entityTypeKey];
-		const { cargoSlots = 0, cargoSlotSize = 1 } = entType;
-		let amountLeft = amount;
-		for (let i = 0; i < cargoSlots; i += 1) {
-			amountLeft = this.giveCargoToSlot(boat.cargo, i, cargoType, amountLeft, cargoSlotSize);
-		}
-		// console.log('Gave', amount - amountLeft, 'to boat.', amountLeft, 'lost.');
-	}
-
 	giveCollisionScore(entA, entB) {
 		if (entA.removed || entB.removed) return;
 		let victim = null;
@@ -675,7 +632,7 @@ export default class World {
 			// (hopefully they will sink quickly and that will be rare)
 			if (victim.isDead) {
 				attacker.score += 2;
-				this.giveCargo(attacker, 'SU', 2 + randInt(12));
+				Cargo.giveCargo(attacker, 'SU', 2 + randInt(12));
 			} else {
 				// Score for hitting, but not killing, an enemy
 				attacker.score += 1;

@@ -46,10 +46,12 @@ export default class Player {
 
 	getConnectionDetails() {
 		const { worldPeerId } = this;
+		const shortenPeerId = (pId) => pId.split('_')[0];
 		return {
-			text: worldPeerId,
+			text: shortenPeerId(worldPeerId),
 			worldPeerId,
 			hostPeerId: this.worldHost.connector.peerId,
+			hostPeerText: shortenPeerId(this.worldHost.connector.peerId),
 			isHosting: this.isHosting,
 		};
 	}

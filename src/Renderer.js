@@ -1,6 +1,7 @@
 import { Application, Assets, Container, Graphics, Sprite, MeshPlane } from 'pixi.js';
 import ParticleController from './ParticleController.js';
-import { radiansToDegrees, pickRand } from './utils.js';
+import { radiansToDegrees, pickRand, rand } from './utils.js';
+import { vec2 } from './Vector2.js';
 import entityTypes from './entityTypes.js';
 import gameConfig from './gameConfig.js';
 
@@ -66,6 +67,12 @@ export default class Renderer {
 		this.visualCannonballs = [];
 		this.visualCrates = [];
 		this.clouds = [];
+		this.waterContainer = new Container();
+		this.worldContainer.addChild(this.waterContainer);
+		// Make container for all physical objects (boats, cannonballs, etc) that are unlikely
+		// to overlap each other, so don't have to worry about z level
+		this.physicsContainer = new Container();
+		this.worldContainer.addChild(this.physicsContainer);
 	}
 
 	static repeatTextureHorizontally(object, repeatCountX = 2) {
@@ -190,7 +197,7 @@ export default class Renderer {
 		sprite.width = entType.width;
 		sprite.height = entType.height;
 		sprite.anchor.set(0.5);
-		this.worldContainer.addChild(vb);
+		this.physicsContainer.addChild(vb);
 		arr.push(vb);
 		return vb;
 	}
@@ -201,7 +208,7 @@ export default class Renderer {
 		sprite.anchor.set(0.5);
 		this.visualCannonballs.push(sprite);
 		// const graphic = new Graphics().circle(0, 0, 10).fill('#ff550077');
-		this.worldContainer.addChild(sprite);
+		this.physicsContainer.addChild(sprite);
 		return sprite;
 	}
 
@@ -211,7 +218,7 @@ export default class Renderer {
 		sprite.anchor.set(0.5);
 		this.visualCrates.push(sprite);
 		// const graphic = new Graphics().circle(0, 0, 10).fill('#ff550077');
-		this.worldContainer.addChild(sprite);
+		this.physicsContainer.addChild(sprite);
 		return sprite;
 	}
 
@@ -241,10 +248,25 @@ export default class Renderer {
 		Renderer.repeatTextureHorizontally(plane, horizontalRepeat);
 		this.waterMeshPlane = plane;
 		this.waterMeshBuffer = null;
-		this.worldContainer.addChild(plane);
+		this.waterContainer.addChild(plane);
 		// Get the buffer for vertex positions.
 		this.waterMeshBuffer = plane.geometry.getAttribute('aPosition').buffer;
 		return plane;
+	}
+
+	static getCannonPoint(boat) {
+		const entType = entityTypes[boat.entityTypeKey];
+		let cannonPos = vec2(boat);
+		if (entType.cannonPoints) {
+			const cannonPoint = entType.cannonPoints[0];
+			// ^ TODO: account for multiple cannon positions
+			cannonPos = cannonPos.add({
+				x: cannonPoint.x * boat.direction,
+				y: cannonPoint.y,
+			});
+			// TODO: Rotate the x, y coordinates around the boat's center
+		}
+		return cannonPos;
 	}
 
 	renderBoats(boats = [], boatCallback = NOOP) {
@@ -299,22 +321,85 @@ export default class Renderer {
 				});
 			}
 			if (!b.removed && !b.isDead) {
+				// const entType = entityTypes[b.entityTypeKey];
 				if (b.hit) {
 					this.particleController.emit(
-						40,
+						35,
 						{ x: b.x, y: b.y },
-						{ scale: 1.8, randomVelocityScale: 20, tint: 0xab597d, life: 20 },
+						{
+							scale: 1.8,
+							randomVelocityScale: 20,
+							// tint: 0xab597d,
+							tints: [0xd8725e, 0xf7cf91, 0xab597d],
+							life: 18,
+							gravityScale: 5,
+						},
 					);
 				}
+				if (b.firing) {
+					const cannonPos = Renderer.getCannonPoint(b);
+					// TODO: Set velocity based on direction and angle of boat
+					// TODO: Set velocity based on angle of firing
+					this.particleController.emit(
+						1,
+						cannonPos,
+						{
+							scale: 3,
+							randomScale: 2,
+							randomVelocityScale: 0.2,
+							baseVelocity: { x: b.direction * 1.5, y: 0 },
+							tints: [0x2d1e2f, 0x452e3f],
+							life: 170,
+							gravityScale: -0.05,
+						},
+					);
+					// Sparks
+					this.particleController.emit(
+						1,
+						cannonPos,
+						{
+							scale: 1,
+							randomScale: 2,
+							randomVelocityScale: 0.2,
+							baseVelocity: { x: b.direction * 4, y: 0 },
+							tints: [0xd8725e, 0xf7cf91],
+							life: 15,
+							gravityScale: 0.1,
+						},
+					);
+				}
+				if (b.submergedPercent) {
+					// Water spray
+					// TODO: base positions on ship's submerged buoyancy points? or at least
+					// take into consideration the ship's angle?
+					this.particleController.emit(
+						b.submergedPercent / 4,
+						{ x: b.x - 50 + rand(100), y: b.y + 49 },
+						{
+							scale: 1,
+							randomScale: 1,
+							randomVelocityScale: 0.12,
+							// tint: 0x5d4550,
+							// tint: 0x799181,
+							tint: 0xa0ddd3,
+							baseVelocity: { x: 0, y: -2 },
+							// tints: [0x452e3f, 0x5d4550],
+							life: 30,
+							gravityScale: 1,
+						},
+					);
+				}
+				// Smoke stack
 				this.particleController.emit(
 					0.2,
-					{ x: b.x, y: b.y },
+					{ x: b.x, y: b.y - 49 },
 					{
 						scale: 4,
-						randomScale: 3,
-						randomVelocityScale: 0.1,
+						randomScale: 4,
+						randomVelocityScale: 0.12,
 						// tint: 0x5d4550,
 						tint: 0x452e3f,
+						// tints: [0x452e3f, 0x5d4550],
 						life: 300,
 						gravityScale: -0.05,
 					},

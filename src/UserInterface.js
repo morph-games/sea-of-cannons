@@ -35,6 +35,7 @@ export default class UserInterface {
 		// this.connElt = $id('conn-details');
 		this.currentConnection = $id('current-connection');
 		this.healthElt = $id('health');
+		this.healthBar = $id('health-bar-inside');
 		this.throttleElt = $id('throttle');
 		this.cargoElt = $id('cargo');
 		this.deathDialog = $id('death');
@@ -55,10 +56,8 @@ export default class UserInterface {
 	async connectToPeerWorld() {
 		// const peerId = window.prompt('Enter world name:', '1_wave_morph');
 		// if (!peerId) return;
-		let peerId = this.connectNameInput.value;
-		if (!Number.isNaN(Number(peerId))) {
-			peerId += '_wave_morph';
-		}
+		const peerText = this.connectNameInput.value;
+		const peerId = `${peerText}_wave_morph`;
 		this.p2pDialog.close();
 		await this.player.connectToWorld(peerId);
 		this.renderConnection();
@@ -128,13 +127,14 @@ export default class UserInterface {
 			text = '???',
 			isHosting = true,
 			worldPeerId = '???',
+			hostPeerText = '???',
 			// hostPeerId = '???',
 		} = this.player.getConnectionDetails();
 		const uiText = `${isHosting ? 'Hosting:' : 'Connected to:'} ${text}`;
 		this.currentConnection.innerText = uiText;
 
 		if (isHosting) {
-			this.hostNameInput.value = worldPeerId;
+			this.hostNameInput.value = hostPeerText;
 		} else {
 			this.connectNameInput.value = worldPeerId;
 			this.hostNameInput.value = 'Will be generated';
@@ -151,10 +151,11 @@ export default class UserInterface {
 		this.throttleElt.innerText = text;
 	}
 
-	renderHealth(hp = 0) {
+	renderHealth(hp = 0, maxHp = 0) {
 		if (!this.healthElt) return;
 		const text = `HP: ${hp}`;
 		if (this.healthElt.innerText !== text) this.healthElt.innerText = text;
+		this.healthBar.style.width = `${(hp / maxHp) * 100}%`;
 	}
 
 	renderCargo(cargo = []) {

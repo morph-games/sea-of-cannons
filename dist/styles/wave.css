@@ -8,8 +8,31 @@ body {
 	overflow: hidden;
 	font-size: calc(12px + 0.75vmin);
 	font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+	font-family: "Texturina", serif;
+	font-optical-sizing: auto;
 	touch-action: none;
 }
+
+/*
+
+.grenze-gotisch-<uniquifier> {
+  font-family: "Grenze Gotisch", serif;
+  font-optical-sizing: auto;
+  font-weight: <weight>;
+  font-style: normal;
+}
+.new-rocker-regular {
+  font-family: "New Rocker", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+.texturina-<uniquifier> {
+  font-family: "Texturina", serif;
+  font-optical-sizing: auto;
+  font-weight: <weight>;
+  font-style: normal;
+}
+*/
 
 dialog {
 	padding: 5vmin;
@@ -36,6 +59,10 @@ button {
 	cursor: pointer;
 	transition: 0.05s ease-in-out;
 	user-select: none;
+	font-family: "New Rocker";
+	font-weight: normal;
+	/* font-family: "Grenze Gotisch", serif; */
+	font-size: 105%;
 }
 button:hover {
 	border-color: #fcecd1;
@@ -81,10 +108,18 @@ input:read-only {
 	text-align: center;
 	transition: transform 2s ease-in-out, opacity 2s ease-in-out, background-color 0.5s ease-in-out;
 	text-shadow: 0 0.5em 0.5em #0005;
+	font-size: 110%;
 }
 #title h1 {
 	font-size: 10vmin;
 	letter-spacing: 0.1em;
+	font-family: "New Rocker";
+}
+#title .of {
+	font-family: "Texturina", serif;
+	display: inline-block;
+	font-size: 90%;
+	transform: translate(0px, 0.3em);
 }
 #title.title--removed {
 	transform: scale(0);
@@ -290,4 +325,17 @@ input:read-only {
 	font-size: 80%;
 	width: 100%;
 	text-align: center;
+}
+
+.health-bar {
+	width: 10vw;
+	height: 0.8em;
+	margin: 0 0 0 1em;
+	display: inline-block;
+	background: #2d1e2f44;
+	border: solid 1px #5d4550;
+}
+.health-bar > div {
+	height: 100%;
+	background: #c57f79;
 }

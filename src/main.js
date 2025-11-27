@@ -3,6 +3,7 @@ import Player from './Player.js';
 import Camera from './Camera.js';
 import UserInterface from './UserInterface.js';
 import SoundController from './SoundController.js';
+import entityTypes from './entityTypes.js';
 
 const player = new Player();
 const ui = new UserInterface(player);
@@ -135,7 +136,7 @@ window.player = player;
 		ui.renderPlayers(playerCount);
 		ui.renderScore(myBoat?.score || 0, highScore);
 		ui.renderThrottle(myBoat?.throttle || 0);
-		ui.renderHealth(myBoat?.hp);
+		ui.renderHealth(myBoat?.hp, entityTypes[myBoat.entityTypeKey]?.maxHp);
 		ui.renderCargo(myBoat?.cargo);
 		ui.renderDeath(myBoat);
 

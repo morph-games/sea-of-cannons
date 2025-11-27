@@ -1,6 +1,7 @@
 import PeerConnector from './PeerConnector.js';
 import World from './World.js';
 import gameConfig from './gameConfig.js';
+import { randInt } from './utils.js';
 
 // const DEFAULT_PEER_ID = '1_wave_morph';
 
@@ -21,7 +22,9 @@ export default class WorldHost {
 	}
 
 	getRandomPeerId() {
-		return `${Math.round(Math.random() * 9999)}${this.peerIdSuffix}`;
+		const asciiValue = 65 + randInt(26); // 65 = ASCII value for 'A'
+		const character = String.fromCharCode(asciiValue);
+		return `${character}${randInt(999)}${this.peerIdSuffix}`;
 	}
 
 	getHostName() { // For now this will just be the peer ID, but we could change this later
@@ -179,8 +182,8 @@ export default class WorldHost {
 	}
 
 	// Receive data from player.connector.send
-	handleData(data, connection, direction) { // <-- arguments from PeerConnector's onData
-		console.log('\t>', data, direction);
+	handleData(data, connection /* , direction */) { // <-- arguments from PeerConnector's onData
+		// console.log('\t>', data, direction);
 		if (data.command) this.handleCommand(data.command[0], data.command[1], data.playerId);
 		if (data.newPlayer) {
 			this.addPlayer(data.newPlayer.id, connection);

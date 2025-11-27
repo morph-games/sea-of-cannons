@@ -46,7 +46,7 @@ const tug = {
 	// All the points are relative/local to the boat's center of mass
 	buoyancyVoxelPoints: getBuoyancyVoxelPoints(100, 100 / 2, BUOYANCY_VOXEL_SIZE), // ??
 	smokeEmissionPoints: [], // ?? WIP
-	cannonPoints: [{ x: 0, y: 0 }], // WIP
+	cannonPoints: [{ x: 35, y: 0 }],
 	density: 3,
 	maxHp: 100,
 	hitDamage: 1,
