@@ -53,7 +53,7 @@ export default class Renderer {
 		// 	.lineTo(0, 200)
 		// 	.stroke({ color: 0x000000, pixelLine: true });
 		// this.bgContainer.addChild(grid);
-		this.click = new Graphics().circle(0, 0, 10).fill('#00000022');
+		this.click = new Graphics().circle(0, 0, 10).stroke('#dbc9b411');
 		this.worldContainer.addChild(this.click);
 
 		this.particleController = null; // created in init

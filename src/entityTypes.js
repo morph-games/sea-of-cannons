@@ -51,8 +51,8 @@ const tug = {
 	maxHp: 100,
 	hitDamage: 1,
 	rateOfFire: 1, // x shots per second
-	cargoSlots: 4,
-	cargoSlotSize: 24,
+	cargoSlots: 3,
+	cargoSlotSize: 32,
 	repairCooldownTime: 500, // ms
 	waterFrictionScale: 0.5, // TODO: Can we avoid this?
 };

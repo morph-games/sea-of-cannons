@@ -133,11 +133,14 @@ window.player = player;
 
 		camera.focus(...player.getFocusCoords());
 
-		ui.renderPlayers(playerCount);
-		ui.renderScore(myBoat?.score || 0, highScore);
-		ui.renderThrottle(myBoat?.throttle || 0);
-		ui.renderHealth(myBoat?.hp, entityTypes[myBoat.entityTypeKey]?.maxHp);
-		ui.renderCargo(myBoat?.cargo);
+		// Most UI elements don't need to render on every single frame
+		if (Math.round(totalTime) % 3 === 0) {
+			ui.renderPlayers(playerCount);
+			ui.renderScore(myBoat?.score || 0, highScore);
+			// ui.renderThrottle(myBoat?.throttle || 0);
+			ui.renderHealth(myBoat?.hp, entityTypes[myBoat.entityTypeKey]?.maxHp);
+			ui.renderCargo(myBoat?.cargo, entityTypes[myBoat.entityTypeKey]?.cargoSlotSize);
+		}
 		ui.renderDeath(myBoat);
 
 		if (keysDown.a || keysDown.ArrowLeft || keysDown.ButtonLeft) {

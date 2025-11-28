@@ -79,12 +79,12 @@ export default class Camera {
 				if (curDiff > this.pinchPrevDiff) {
 					// The distance between the two pointers has increased
 					// log("Pinch moving OUT -> Zoom in", ev);
-					this.addZoom(0.05);
+					this.addZoom(0.02);
 					// TODO: Make this based on the diff + some exponent scaling
 				} else if (curDiff < this.pinchPrevDiff) {
 					// The distance between the two pointers has decreased
 					// log('Pinch moving IN -> Zoom out', ev);
-					this.addZoom(-0.05);
+					this.addZoom(-0.02);
 					// TODO: Make this based on the diff + some exponent scaling
 				}
 				// Cache the distance for the next move event

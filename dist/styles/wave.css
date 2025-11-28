@@ -59,6 +59,8 @@ button {
 	cursor: pointer;
 	transition: 0.05s ease-in-out;
 	user-select: none;
+	-webkit-user-select: none; /* safari doesn't support user-select? */
+	touch-action: none;
 	font-family: "New Rocker";
 	font-weight: normal;
 	/* font-family: "Grenze Gotisch", serif; */
@@ -304,27 +306,48 @@ input:read-only {
 	display: flex;
 	flex-direction: row;
 }
-.cargo-slot {
+.cargo-slot,
+.health-slot {
 	display: block;
 	margin: 0 1em 0 0;
 	padding: 0;
-	color: #7b6268;
 }
 .cargo-slot--empty {
+	color: #7b6268;
 	opacity: 0.3;
 }
-.cargo-slot-block {
+.cargo-slot-block,
+.health-slot-block {
+	position: relative;
 	border: solid 1px #7b6268;
-	color: #9c807e;
-	font-size: 120%;
-	padding: 0.2em;
-	width: 2em;
-	height: 2em;
+	/* color: #9c807e; */
+	box-sizing: border-box;
+	width: calc(5vmin + 2em);
+	height: calc(5vmin + 2em);
 }
-.cargo-slot-name {
+.slot-value {
+	position: absolute;
+	width: 100%;
+	font-size: 120%;
+	text-align: center;
+}
+.slot-bar {
+	height: 100%;
+	background: #5d455066;
+}
+.slot-name {
 	font-size: 80%;
 	width: 100%;
 	text-align: center;
+}
+.cargo-slot .slot-name {
+	color:  #9c807e;;
+}
+.slot--bad .slot-block {
+	border-color: #a94b54;
+}
+.slot--bad .slot-value {
+	color: #d8725e;
 }
 
 .health-bar {

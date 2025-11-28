@@ -143,31 +143,40 @@ export default class UserInterface {
 		this.p2pDialog.classList.toggle('p2p-hosting', isHosting);
 	}
 
-	renderThrottle(throttleVal) {
-		if (!this.throttleElt) return;
-		let text = '';
-		if (throttleVal > 0) text = '->';
-		if (throttleVal < 0) text = '<-';
-		this.throttleElt.innerText = text;
-	}
-
 	renderHealth(hp = 0, maxHp = 0) {
 		if (!this.healthElt) return;
-		const text = `HP: ${hp}`;
-		if (this.healthElt.innerText !== text) this.healthElt.innerText = text;
-		this.healthBar.style.width = `${(hp / maxHp) * 100}%`;
+		const isBad = hp < (maxHp * 0.6);
+		// const text = `HP: ${hp}`;
+		// if (this.healthElt.innerText !== text) this.healthElt.innerText = text;
+		// this.healthBar.style.width = `${(hp / maxHp) * 100}%`;
+		const percent = (hp / maxHp) * 100;
+		this.healthElt.innerHTML = `<li class="health-slot ${isBad ? 'slot--bad' : ''}">
+				<div class="health-slot-block slot-block">
+					<div class="slot-value">
+						${UserInterface.getInteger(hp)}
+					</div>
+					<div class="slot-bar" style="width: ${percent}%"></div>
+				</div>
+				<div class="slot-name">Hull</div>
+			</li>`;
 	}
 
-	renderCargo(cargo = []) {
+	renderCargo(cargo = [], cargoSlotSize = 1) {
 		if (!this.cargoElt) return;
 		const html = cargo.map((cargoSlot) => {
 			const [cargoTypeKey = '', amount = 0] = cargoSlot || [];
 			const isEmpty = amount === 0;
 			let { name = '?' } = cargoTypes[cargoTypeKey] || {};
 			if (isEmpty) name = 'Empty';
+			const percent = (amount / cargoSlotSize) * 100;
 			return `<li class="cargo-slot ${isEmpty ? 'cargo-slot--empty' : ''}">
-				<div class="cargo-slot-block">${isEmpty ? '' : UserInterface.getInteger(amount)}</div>
-				<div class="cargo-slot-name">${name}</div>
+				<div class="cargo-slot-block slot-block">
+					<div class="slot-value">
+						${isEmpty ? '' : UserInterface.getInteger(amount)}
+					</div>
+					<div class="slot-bar" style="width: ${percent}%"></div>
+				</div>
+				<div class="slot-name">${name}</div>
 			</li>`;
 		}).join('');
 		if (html !== this.cargoElt.innerHTML) this.cargoElt.innerHTML = html;
